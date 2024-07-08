@@ -6,4 +6,5 @@
 /cnn_models_v2/
 /cnn_models_v3/
 /logs/
+/eval_stockfish/
 /__pycache__/*

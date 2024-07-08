@@ -13,10 +13,10 @@ IMAGES = {}
 BOARDER_SIZE = 40
 LABEL_FONT_SIZE = 20
 NUM_GAMES_TRAIN = 100
-PGN_PATH = './lichess_db_standard_rated_2015-08.pgn'
+PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 # PGN_PATH = './test.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
-CONFIG_PATH = './config2.yaml'
+CONFIG_PATH = './config.yaml'
 
 # Load configuration
 def load_config():
