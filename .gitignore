@@ -1,0 +1,9 @@
+/base_pgn_files/
+/split_pgn_files/
+/og_model/
+/flat_models/
+/cnn_models_v1/
+/cnn_models_v2/
+/cnn_models_v3/
+/logs/
+/__pycache__/*
