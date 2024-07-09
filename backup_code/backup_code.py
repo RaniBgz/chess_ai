@@ -39,3 +39,36 @@
             except multiprocessing.queues.Empty:
                 pass
 
+
+        def train_ai(ai, queue):
+            try:
+                game_number_last = 1
+                move_count = 0
+                visualize = False
+                moves_train = ai.train_on_pgn(PGN_PATH, num_games=NUM_GAMES_TRAIN)
+                for game_number, is_trained, move, game_ended in moves_train:
+                    # print(f'Train on game {game_number}')
+                    move_count += 1
+                    if game_number == game_number_last + 1:
+                        move_count = 0
+                        game_number_last = game_number
+                        queue.put(("reset", None, None, None, True))  # Signal to reset the board
+
+                    if move_count <= 10:
+                        visualize = True
+                    else:
+                        visualize = False
+                    queue.put((visualize, game_number, is_trained, move, game_ended))
+                    if is_trained == True:
+                        ai.save_model(config['model_path'])
+                        save_config(config)
+                        break
+                queue.put(None)  # Signal the end of training
+            except FileNotFoundError:
+                print("ERROR: Training file not found or inaccessible")
+                queue.put('error')
+                queue.put(None)
+            except Exception as e:
+                print(f"ERROR: {e}")
+                queue.put('error')
+                queue.put(None)

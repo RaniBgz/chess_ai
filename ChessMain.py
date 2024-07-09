@@ -39,39 +39,6 @@ def loadImages():
     for piece in pieces:
         IMAGES[piece] = p.transform.scale(p.image.load("images/" + piece + ".png"), (SQ_SIZE, SQ_SIZE))
 
-def train_ai(ai, queue):
-    try:
-        game_number_last = 1
-        move_count = 0
-        visualize = False
-        moves_train = ai.train_on_pgn(PGN_PATH, num_games=NUM_GAMES_TRAIN)
-        for game_number, is_trained, move, game_ended in moves_train:
-            # print(f'Train on game {game_number}')
-            move_count += 1
-            if game_number == game_number_last + 1:
-                move_count = 0
-                game_number_last = game_number
-                queue.put(("reset", None,None, None, True))  # Signal to reset the board
-            
-            if move_count <= 10:
-                visualize = True
-            else:
-                visualize = False
-            queue.put((visualize,game_number, is_trained, move, game_ended))
-            if is_trained==True:
-                ai.save_model(config['model_path'])
-                save_config(config)
-                break
-        queue.put(None)  # Signal the end of training
-    except FileNotFoundError:
-        print("ERROR: Training file not found or inaccessible")
-        queue.put('error')
-        queue.put(None)
-    except Exception as e:
-        print(f"ERROR: {e}")
-        queue.put('error')
-        queue.put(None)        
-
 # MAIN, to handle user input and update graphics
 def main():
     p.init()
@@ -84,52 +51,26 @@ def main():
     animate = False  # flag variable for when we should use animate a move
     loadImages()
     running = True
-    is_training = False
-    training_error = False
     sqSelected = ()
     playerClicks = []
     gameOver = False
     playerOne = True  # If a human is playing white, else False
     playerTwo = False  # If a human is playing black, else False
-    move_queue = None
 
     evaluations = []
 
-    # ai = ChessAI()
-
-    if os.path.exists(config['model_path']) and not config['use_checkpoint']:
+    if os.path.exists(config['model_path']):
         ai = ChessAI(MODEL_PATH=config['model_path'])
-        is_training = False
-        print("Loading the existing model for inference")
-
-    elif os.path.exists(config['model_path']) and config['use_checkpoint']:
-        ai = ChessAI(MODEL_PATH=config['model_path'])
-        is_training = True
-        print("Loading the existing model for training on new data")
-        move_queue = multiprocessing.Queue()
-        training_process = multiprocessing.Process(target=train_ai, args=(ai, move_queue))
-        training_process.start()
-
     else:
-        print("Starting the training from scratch")
         ai = ChessAI()
-        is_training = True
-        move_queue = multiprocessing.Queue()
-        training_process = multiprocessing.Process(target=train_ai, args=(ai, move_queue))
-        training_process.start()
 
     while running:
         humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-            elif e.type == p.KEYDOWN and is_training:
-                if e.key == p.K_ESCAPE:
-                    training_process.terminate()
-                    move_queue.close()
-                    is_training = False
             # mouse handle
-            elif e.type == p.MOUSEBUTTONDOWN and not is_training:
+            elif e.type == p.MOUSEBUTTONDOWN:
                 if not gameOver and humanTurn:
                     location = p.mouse.get_pos()  # (x, y) location of mouse
                     col = location[0] // SQ_SIZE
@@ -152,7 +93,7 @@ def main():
                         if not moveMade:
                             playerClicks = [sqSelected]
             # key handler
-            elif e.type == p.KEYDOWN and not is_training:
+            elif e.type == p.KEYDOWN:
                 if e.key == p.K_z:  # undo when z is pressed
                     gs.undoMove() if playerTwo else gs.undoLastTwoMoves()      
                     moveMade = True
@@ -167,7 +108,7 @@ def main():
                     gameOver = False
 
         # AI move finder
-        if not gameOver and not humanTurn and not is_training and not training_error:
+        if not gameOver and not humanTurn:
             board = chess_state_to_board(gs)
             ai_move = ai.get_best_move(board)
 
@@ -206,12 +147,6 @@ def main():
             moveMade = False
             animate = False
 
-            # Evaluate the move
-            # evaluation = ai.evaluate_move(gs)
-            # print("Evaluation: ", evaluation)
-            # evaluations.append((gs.moveLog[-1], evaluation))
-
-
         drawGameState(screen, gs, validMoves, sqSelected)
 
         if gs.checkMate:
@@ -227,14 +162,6 @@ def main():
         if gameOver:
             avg_accuracy = ai.compute_average_accuracy()
             print(f"Average accuracy: {avg_accuracy}")
-
-        if is_training:
-            drawText(screen, f'Train on game {train_game_number}')
-        elif training_error:
-            drawText(screen, 'Training enabled but data not found, playing human vs human')
-            running = False
-        # else:
-        #     drawText(screen, 'Human vs AI')
 
         clock.tick(MAX_FPS)
         p.display.flip()
