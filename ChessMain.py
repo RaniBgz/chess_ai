@@ -93,6 +93,8 @@ def main():
     playerTwo = False  # If a human is playing black, else False
     move_queue = None
 
+    evaluations = []
+
     # ai = ChessAI()
 
     if os.path.exists(config['model_path']) and not config['use_checkpoint']:
@@ -117,47 +119,6 @@ def main():
         training_process.start()
 
     while running:
-        if is_training:
-            try:
-                train_game_number = 1
-                move_none = ChessState.Move((0,0), (0,0), gs.board)
-                move_data = move_queue.get_nowait()
-                print("Move data: ", move_data)
-                if move_data == 'error':
-                    training_error = True
-                    is_training = False
-                    continue
-                if move_data is None:
-                    is_training = False
-                    continue
-                visualize, game_number, is_trained, move, game_ended = move_data
-                # print(f'Train on game {game_number}')
-                if game_number and game_number>train_game_number:
-                    train_game_number = game_number
-                # print("Is trained: ", is_trained)
-                if visualize == "reset":
-                    gs = ChessState.GameState()  # Reset the game state
-                    validMoves = gs.getValidMoves()
-                    continue
-                if not is_trained:
-                    if visualize:
-                        move_player = move_none.fromChessNotation(move, gs.board)
-                        for i in range(len(validMoves)):
-                            if move_player == validMoves[i]:
-                                gs.makeMove(validMoves[i])
-                                moveMade = True
-                                animate = True
-                    if game_ended:
-                        gs = ChessState.GameState()  # Reset the game state
-                        validMoves = gs.getValidMoves()
-                else:
-                    print("Training Finished!")
-                    training_process.terminate()
-                    move_queue.close()
-                    is_training = False
-            except multiprocessing.queues.Empty:
-                pass
-
         humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
         for e in p.event.get():
             if e.type == p.QUIT:
@@ -209,6 +170,7 @@ def main():
         if not gameOver and not humanTurn and not is_training and not training_error:
             board = chess_state_to_board(gs)
             ai_move = ai.get_best_move(board)
+
             print("Human move: ", gs.moveLog[-1].getChessNotation() if gs.moveLog else "None", "AI move: ", ai_move)
             if ai_move:
                 ai_move_made = False
@@ -216,6 +178,8 @@ def main():
                     if move.startRow == ai_move.from_square // 8 and move.startCol == ai_move.from_square % 8 and \
                        move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
                         print("AI making move")
+                        cn_move = move.getChessNotation()
+                        ai.score_move(gs, cn_move, n_top_moves=20)
                         gs.makeMove(move)
                         moveMade = True
                         animate = True
@@ -226,6 +190,8 @@ def main():
                     import random
                     if validMoves:
                         random_move = random.choice(validMoves)
+                        cn_random_move = random_move.getChessNotation()
+                        ai.score_move(gs, cn_random_move, n_top_moves=20)
                         gs.makeMove(random_move)
                         moveMade = True
                         animate = True
@@ -240,6 +206,12 @@ def main():
             moveMade = False
             animate = False
 
+            # Evaluate the move
+            # evaluation = ai.evaluate_move(gs)
+            # print("Evaluation: ", evaluation)
+            # evaluations.append((gs.moveLog[-1], evaluation))
+
+
         drawGameState(screen, gs, validMoves, sqSelected)
 
         if gs.checkMate:
@@ -252,6 +224,10 @@ def main():
             gameOver = True
             drawText(screen, 'Stalemate')
 
+        if gameOver:
+            avg_accuracy = ai.compute_average_accuracy()
+            print(f"Average accuracy: {avg_accuracy}")
+
         if is_training:
             drawText(screen, f'Train on game {train_game_number}')
         elif training_error:
@@ -262,6 +238,10 @@ def main():
 
         clock.tick(MAX_FPS)
         p.display.flip()
+
+    # Print the evaluation summary at the end of the game
+    # for move, evaluation in evaluations:
+    #     print(f"Move: {move}, Evaluation: {evaluation}")
 
 def highlightSquares(screen, gs, validMoves, sqSelected):
     if sqSelected != ():

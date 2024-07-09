@@ -106,10 +106,14 @@ class GameState:
             if len(self.moveLog) > 0:
                 self.undoMove()
 
+
+
+
     # Update the castle rights given to move
     def updateCastleRights(self, move):
         if move.pieceMoved == 'wK':
             self.currentCastlingRight.wks = False
+            self.currentCastlingRight.wqs = False
             self.currentCastlingRight.wqs = False
         elif move.pieceMoved == 'bK':
             self.currentCastlingRight.bks = False
