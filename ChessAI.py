@@ -7,13 +7,15 @@ import time
 import io
 import os
 from stockfish import Stockfish
-
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from collections import deque
 
 pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
-num_chunks = 2
+num_chunks = 50
 game_numbers = num_chunks * 500
-batch_size = 2
+batch_size = 4
 
 model_path = f'./cnn_models_v3/cnn_v3_{game_numbers}.h5'
 stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
@@ -23,6 +25,7 @@ class ChessAI:
         print("Model path: ", MODEL_PATH)
         self.stockfish = Stockfish(path=stockfish_path)
         self.ai_move_scores = []
+        self.human_move_scores = []
         if os.path.exists(MODEL_PATH):
             self.model = keras.models.load_model(MODEL_PATH)
             print("Model loaded from disk.")
@@ -203,34 +206,48 @@ class ChessAI:
         self.model.save(MODEL_PATH)
         print("Model saved to disk.")
 
-    def score_move(self, gs, ai_move, n_top_moves=20):
+    '''
+    Scores the move that was just made by comparing the move to stockfish's top n moves (max 20)
+    Depending on if the move is human or AI, the move is scored and added to the respective list
+    In the future: make this even more abstract (black/white) to support AI vs AI play
+    '''
+    def score_move(self, gs, move, humanTurn = False, n_top_moves=20):
         top_moves = self.get_top_moves(gs, n_top_moves)
-        ai_move_index = -1
-        ai_move_accuracy = 0.0
-        print("Top moves length: ", len(top_moves))
-        print("Ai move: ", ai_move)
+        move_index = -1
+        move_accuracy = 0.0
         for i in range(0, len(top_moves)):
-            print(f"Current top move: {top_moves[i]['Move']}")
-            print(f"Current ai move: {ai_move}")
-            if top_moves[i]['Move'] == ai_move:
-                ai_move_index = i
+            print(f"Top move {i}: {top_moves[i]['Move']}")
+            if top_moves[i]['Move'] == move:
+                move_index = i
                 break
-        if ai_move_index == -1:
-            print(f"AI move {ai_move} not found in top {n_top_moves} moves")
+        if move_index == -1:
+            print(f"Move {move} not found in top {n_top_moves} moves, accuracy is 0")
         else:
             accuracy_step = 100/n_top_moves
-            ai_move_accuracy = 100.0 - (ai_move_index * accuracy_step)
-        self.ai_move_scores.append([ai_move, ai_move_accuracy])
-        print(f"ai_move_scores: {self.ai_move_scores}")
+            move_accuracy = 100.0 - (move_index * accuracy_step)
+        if humanTurn:
+            self.human_move_scores.append([move, move_accuracy])
+        self.ai_move_scores.append([move, move_accuracy])
+        print(f"AI move scores: {self.ai_move_scores}")
+        self.compute_average_accuracy()
+        # print(f"Human move scores: {self.human_move_scores}")
 
 
     def compute_average_accuracy(self):
-        total_accuracy = 0
+        total_human_accuracy = 0
+        total_ai_accuracy = 0
+
+        # #Compute human
+        # for move in self.human_move_scores:
+        #     total_human_accuracy += move[1]
+        # average_human_accuracy = total_human_accuracy / len(self.human_move_scores)
+        # print("Average Human accuracy: ", average_human_accuracy)
+
         for move in self.ai_move_scores:
-            total_accuracy += move[1]
-        average_accuracy = total_accuracy / len(self.ai_move_scores)
-        print("Average accuracy: ", average_accuracy)
-        return average_accuracy
+            total_ai_accuracy += move[1]
+        average_ai_accuracy = total_ai_accuracy / len(self.ai_move_scores)
+        # print("Average AI accuracy: ", average_ai_accuracy)
+        return average_ai_accuracy
 
 
     def get_top_moves(self, gs, n):
@@ -245,13 +262,12 @@ class ChessAI:
         return top_moves or []
         # print("Top moves: ", top_moves)
 
-    #Unused at the moment: static evaluation
+    #Unused at the moment: static evaluation of a position
     def evaluate_move(self, gs):
         fen_position = board_to_fen(gs)
         print("Fen position: ", fen_position)
         self.stockfish.set_fen_position(fen_position)
         return self.stockfish.get_evaluation()
-
 
 def chess_state_to_board(gs):
     fen = ""
@@ -320,48 +336,6 @@ def board_to_fen(gs):
     fen += " 0 1"
 
     return fen
-
-
-# def board_to_fen(gs):
-#     board = gs.board
-#     fen = ""
-#     for row in board:
-#         empty_count = 0
-#         for square in row:
-#             if square == "--":
-#                 empty_count += 1
-#             else:
-#                 if empty_count > 0:
-#                     fen += str(empty_count)
-#                     empty_count = 0
-#                 fen += square[1].lower() if square[0] == 'b' else square[1].upper()
-#         if empty_count > 0:
-#             fen += str(empty_count)
-#         fen += "/"
-#     fen = fen[:-1]  # Remove the last slash
-#
-#     # Add active color
-#     fen += " b" if gs.whiteToMove else " w"
-#
-#     # Castling rights
-#     castling_rights = ""
-#     if gs.currentCastlingRight.wks:
-#         castling_rights += "K"
-#     if gs.currentCastlingRight.wqs:
-#         castling_rights += "Q"
-#     if gs.currentCastlingRight.bks:
-#         castling_rights += "k"
-#     if gs.currentCastlingRight.bqs:
-#         castling_rights += "q"
-#     fen += " " + castling_rights if castling_rights else " -"
-#
-#     # En passant target square
-#     fen += " " + ("-" if not gs.enpassantPossible else f"{gs.enpassantPossible[0]}{gs.enpassantPossible[1]}")
-#
-#     # Halfmove clock and fullmove number (set to 0 and 1 for simplicity)
-#     fen += " 0 1"
-#
-#     return fen
 
 
 def split_pgn_file(pgn_file, games_per_chunk=500):

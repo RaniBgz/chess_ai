@@ -56,6 +56,7 @@ def main():
     gameOver = False
     playerOne = True  # If a human is playing white, else False
     playerTwo = False  # If a human is playing black, else False
+    n_top_moves = 10
 
     evaluations = []
 
@@ -85,11 +86,14 @@ def main():
                         move = ChessState.Move(playerClicks[0], playerClicks[1], gs.board)
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
+                                # cn_human_move = validMoves[i].getChessNotation()
+                                # ai.score_move(gs, cn_human_move, humanTurn=True, n_top_moves=n_top_moves)
                                 gs.makeMove(validMoves[i])
                                 moveMade = True
                                 animate = True
                                 sqSelected = ()  # reset user click
                                 playerClicks = []
+                                #Human move: Engine is too slow to score all moves
                         if not moveMade:
                             playerClicks = [sqSelected]
             # key handler
@@ -120,7 +124,7 @@ def main():
                        move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
                         print("AI making move")
                         cn_move = move.getChessNotation()
-                        ai.score_move(gs, cn_move, n_top_moves=20)
+                        ai.score_move(gs, cn_move, n_top_moves=n_top_moves)
                         gs.makeMove(move)
                         moveMade = True
                         animate = True
@@ -132,7 +136,7 @@ def main():
                     if validMoves:
                         random_move = random.choice(validMoves)
                         cn_random_move = random_move.getChessNotation()
-                        ai.score_move(gs, cn_random_move, n_top_moves=20)
+                        ai.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
                         gs.makeMove(random_move)
                         moveMade = True
                         animate = True
@@ -161,7 +165,6 @@ def main():
 
         if gameOver:
             avg_accuracy = ai.compute_average_accuracy()
-            print(f"Average accuracy: {avg_accuracy}")
 
         clock.tick(MAX_FPS)
         p.display.flip()
