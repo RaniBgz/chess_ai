@@ -141,7 +141,7 @@ class ChessAI:
                     print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
             print("Training done on chunk ", chunk_index + 1)
             game_nb = (chunk_index + 1) * 500
-            save_path = f'./cnn_models_v3/cnn_v3_{game_nb}.h5'
+            save_path = f'./cnn_models_v3/cnn_v3_{game_nb}_bs_{batch_size}.h5'
 
 
 
