@@ -15,7 +15,7 @@ from collections import deque
 
 pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
-num_chunks = 1
+num_chunks = 2
 game_numbers = num_chunks * 500
 batch_size = 4
 
@@ -177,69 +177,6 @@ class ChessAI:
             self.model.save(MODEL_PATH)
             print("Model saved to disk.")
 
-    '''
-    Scores the move that was just made by comparing the move to stockfish's top n moves (max 20)
-    Depending on if the move is human or AI, the move is scored and added to the respective list
-    In the future: make this even more abstract (black/white) to support AI vs AI play
-    '''
-    def score_move(self, gs, move, humanTurn = False, n_top_moves=20):
-        top_moves = self.get_top_moves(gs, n_top_moves)
-        move_index = -1
-        move_accuracy = 0.0
-        for i in range(0, len(top_moves)):
-            print(f"Top move {i}: {top_moves[i]['Move']}")
-            if top_moves[i]['Move'] == move:
-                move_index = i
-                break
-        if move_index == -1:
-            print(f"Move {move} not found in top {n_top_moves} moves, accuracy is 0")
-        else:
-            accuracy_step = 100/n_top_moves
-            move_accuracy = 100.0 - (move_index * accuracy_step)
-        if humanTurn:
-            self.human_move_scores.append([move, move_accuracy])
-        self.ai_move_scores.append([move, move_accuracy])
-        print(f"AI move scores: {self.ai_move_scores}")
-        self.compute_average_accuracy()
-        # print(f"Human move scores: {self.human_move_scores}")
-
-
-    def compute_average_accuracy(self):
-        total_human_accuracy = 0
-        total_ai_accuracy = 0
-
-        # #Compute human
-        # for move in self.human_move_scores:
-        #     total_human_accuracy += move[1]
-        # average_human_accuracy = total_human_accuracy / len(self.human_move_scores)
-        # print("Average Human accuracy: ", average_human_accuracy)
-
-        for move in self.ai_move_scores:
-            total_ai_accuracy += move[1]
-        average_ai_accuracy = total_ai_accuracy / len(self.ai_move_scores)
-        # print("Average AI accuracy: ", average_ai_accuracy)
-        return average_ai_accuracy
-
-
-    def get_top_moves(self, gs, n):
-        fen_position = board_to_fen(gs)
-        self.stockfish.set_fen_position(fen_position)
-        print(f"Fen position: {fen_position}")
-        try:
-            top_moves = self.stockfish.get_top_moves(n)
-        except:
-            print("Error: Stockfish could not get top moves")
-            return []
-        return top_moves or []
-        # print("Top moves: ", top_moves)
-
-    #Unused at the moment: static evaluation of a position
-    def evaluate_move(self, gs):
-        fen_position = board_to_fen(gs)
-        print("Fen position: ", fen_position)
-        self.stockfish.set_fen_position(fen_position)
-        return self.stockfish.get_evaluation()
-
 def chess_state_to_board(gs):
     fen = ""
     for row in gs.board:
@@ -258,55 +195,6 @@ def chess_state_to_board(gs):
     fen = fen[:-1]  # remove last slash
     fen += " w KQkq - 0 1"  # Add default values for now
     return chess.Board(fen)
-
-def board_to_fen(gs):
-    # Define the mappings for row to rank and column to file
-    rowsToRanks = {7: '1', 6: '2', 5: '3', 4: '4', 3: '5', 2: '6', 1: '7', 0: '8'}
-    colsToFiles = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
-
-    board = gs.board
-    fen = ""
-    for row in board:
-        empty_count = 0
-        for square in row:
-            if square == "--":
-                empty_count += 1
-            else:
-                if empty_count > 0:
-                    fen += str(empty_count)
-                    empty_count = 0
-                fen += square[1].lower() if square[0] == 'b' else square[1].upper()
-        if empty_count > 0:
-            fen += str(empty_count)
-        fen += "/"
-    fen = fen[:-1]  # Remove the last slash
-
-    # Add active color
-    fen += " w" if gs.whiteToMove else " b"
-
-    # Castling rights
-    castling_rights = ""
-    if gs.currentCastlingRight.wks:
-        castling_rights += "K"
-    if gs.currentCastlingRight.wqs:
-        castling_rights += "Q"
-    if gs.currentCastlingRight.bks:
-        castling_rights += "k"
-    if gs.currentCastlingRight.bqs:
-        castling_rights += "q"
-    fen += " " + castling_rights if castling_rights else " -"
-
-    # En passant target square
-    if gs.enpassantPossible:
-        row, col = gs.enpassantPossible
-        fen += " " + rowsToRanks[row] + colsToFiles[col]
-    else:
-        fen += " -"
-
-    # Halfmove clock and fullmove number (set to 0 and 1 for simplicity)
-    fen += " 0 1"
-
-    return fen
 
 
 def split_pgn_file(pgn_file, games_per_chunk=500):

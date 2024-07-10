@@ -167,7 +167,7 @@ def main():
             drawText(screen, 'Stalemate')
 
         if gameOver:
-            avg_accuracy = ai.compute_average_accuracy()
+            avg_accuracy = metrics.compute_average_accuracy()
 
         clock.tick(MAX_FPS)
         p.display.flip()

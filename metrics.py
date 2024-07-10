@@ -57,7 +57,7 @@ class Metrics:
         for move in self.ai_move_scores:
             total_ai_accuracy += move[1]
         average_ai_accuracy = total_ai_accuracy / len(self.ai_move_scores)
-        # print("Average AI accuracy: ", average_ai_accuracy)
+        print("Average AI accuracy: ", average_ai_accuracy)
         return average_ai_accuracy
 
 
