@@ -16,10 +16,9 @@ from collections import deque
 pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
 num_chunks = 2
-game_numbers = num_chunks * 500
 batch_size = 4
 
-model_path = f'./cnn_models_v3/cnn_v3_{game_numbers}_bs_{batch_size}.h5'
+model_path = f'./cnn_models_v3/cnn_v3_{num_chunks}_bs_{batch_size}.h5'
 # stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
 
 class ChessAI:
@@ -140,8 +139,7 @@ class ChessAI:
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
             print("Training done on chunk ", chunk_index + 1)
-            game_nb = (chunk_index + 1) * 500
-            save_path = f'./cnn_models_v3/cnn_v3_{game_nb}_bs_{batch_size}.h5'
+            save_path = f'./cnn_models_v3/cnn_v3_{chunk_index}_bs_{batch_size}.h5'
 
 
 
