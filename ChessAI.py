@@ -4,30 +4,19 @@ from tensorflow import keras
 import chess
 import chess.pgn
 import time
-import io
 import os
-from stockfish import Stockfish
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from collections import deque
 
 #TODO: make training fault-resilient
-
-pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
 num_chunks = 2
 batch_size = 4
 
 model_path = f'./cnn_models_v3/cnn_v3_{num_chunks}_bs_{batch_size}.h5'
-# stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
 
 class ChessAI:
-    def __init__(self, MODEL_PATH=""):
+    def __init__(self, pretrained=False, MODEL_PATH=""):
         print("Model path: ", MODEL_PATH)
-        # self.stockfish = Stockfish(path=stockfish_path)
-        self.ai_move_scores = []
-        self.human_move_scores = []
-        self.pretrained_model = False
+        self.pretrained = pretrained
         if os.path.exists(MODEL_PATH):
             self.model = keras.models.load_model(MODEL_PATH)
             print("Model loaded from disk.")
@@ -140,6 +129,7 @@ class ChessAI:
                     print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
             print("Training done on chunk ", chunk_index + 1)
             save_path = f'./cnn_models_v3/cnn_v3_{chunk_index}_bs_{batch_size}.h5'
+            self.save_model(save_path)
 
 
 
@@ -194,35 +184,7 @@ def chess_state_to_board(gs):
     fen += " w KQkq - 0 1"  # Add default values for now
     return chess.Board(fen)
 
-
-def split_pgn_file(pgn_file, games_per_chunk=500):
-    output_dir = 'split_pgn_files'
-    os.makedirs(output_dir, exist_ok=True)
-
-    chunk_count = 0
-    with open(pgn_file) as f:
-        while True:
-            chunk_filename = os.path.join(output_dir, f"chunk_{chunk_count}.pgn")
-            with open(chunk_filename, 'w') as chunk_file:
-                for _ in range(games_per_chunk):
-                    game = chess.pgn.read_game(f)
-                    if game is None:
-                        return
-                    chunk_file.write(str(game) + "\n\n")
-            chunk_count += 1
-
-
-# In your main game loop, when it's AI's turn:
-# board = chess_state_to_board(gs)  # Convert your GameState to chess.Board
-# best_move = ai.get_best_move(board)
-# if best_move:
-#     # Convert best_move to your Move class and make the move
-#     # For example: gs.makeMove(Move(best_move.from_square, best_move.to_square, gs.board))
-
 if __name__ == "__main__":
-    # print("Splitting PGN file into chunks...")
-    # split_pgn_file(pgn_path, games_per_chunk=500)
-
 
     print("Initializing chessAI")
     ai = ChessAI(MODEL_PATH=model_path)
@@ -234,15 +196,4 @@ if __name__ == "__main__":
     ai.save_model(model_path)
     end_time = time.time()
     print(f"Training completed in {end_time - start_time} seconds")
-
-    # print("Training on pgn data:", pgn_path)
-    # start_time = time.time()
-    # # for _ in ai.train_on_pgn(pgn_path, num_games=100):  # Train the AI on PGN data
-    # #     pass  # This will execute the generator
-    # # ai.train_on_pgn(pgn_path, num_games=10)  # Train the AI on PGN data
-    # ai.train_on_pgn(pgn_path, num_games=500)  # Train the AI on PGN data
-    #
-    # ai.save_model(model_path)
-    # end_time = time.time()
-    # print(f"Training completed in {end_time - start_time} seconds")
 

@@ -1,5 +1,11 @@
 ''' Utils functions for the chess game'''
 
+import os
+import chess
+
+pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
+
+
 def board_to_fen(gs):
     # Define the mappings for row to rank and column to file
     rowsToRanks = {7: '1', 6: '2', 5: '3', 4: '4', 3: '5', 2: '6', 1: '7', 0: '8'}
@@ -48,3 +54,25 @@ def board_to_fen(gs):
     fen += " 0 1"
 
     return fen
+
+
+def split_pgn_file(pgn_file, games_per_chunk=500):
+    output_dir = 'split_pgn_files'
+    os.makedirs(output_dir, exist_ok=True)
+
+    chunk_count = 0
+    with open(pgn_file) as f:
+        while True:
+            chunk_filename = os.path.join(output_dir, f"chunk_{chunk_count}.pgn")
+            with open(chunk_filename, 'w') as chunk_file:
+                for _ in range(games_per_chunk):
+                    game = chess.pgn.read_game(f)
+                    if game is None:
+                        return
+                    chunk_file.write(str(game) + "\n\n")
+            chunk_count += 1
+
+if __name__ == "__main__":
+    pass
+    # print("Splitting PGN file into chunks...")
+    # split_pgn_file(pgn_path, games_per_chunk=500)
