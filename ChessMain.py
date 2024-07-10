@@ -4,6 +4,7 @@ import yaml
 import os
 from Chess import ChessState
 from ChessAI import ChessAI, chess_state_to_board
+from metrics import Metrics
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8  # 8*8 board
@@ -57,6 +58,8 @@ def main():
     playerOne = True  # If a human is playing white, else False
     playerTwo = False  # If a human is playing black, else False
     n_top_moves = 10
+
+    metrics = Metrics()
 
     evaluations = []
 
@@ -124,7 +127,7 @@ def main():
                        move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
                         print("AI making move")
                         cn_move = move.getChessNotation()
-                        ai.score_move(gs, cn_move, n_top_moves=n_top_moves)
+                        metrics.score_move(gs, cn_move, n_top_moves=n_top_moves)
                         gs.makeMove(move)
                         moveMade = True
                         animate = True
@@ -136,7 +139,7 @@ def main():
                     if validMoves:
                         random_move = random.choice(validMoves)
                         cn_random_move = random_move.getChessNotation()
-                        ai.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
+                        metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
                         gs.makeMove(random_move)
                         moveMade = True
                         animate = True

@@ -8,3 +8,4 @@
 /logs/
 /eval_stockfish/
 /__pycache__/*
+/stockfish/

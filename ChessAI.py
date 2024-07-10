@@ -11,13 +11,15 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from collections import deque
 
+#TODO: make training fault-resilient
+
 pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
-num_chunks = 50
+num_chunks = 1
 game_numbers = num_chunks * 500
 batch_size = 4
 
-model_path = f'./cnn_models_v3/cnn_v3_{game_numbers}.h5'
+model_path = f'./cnn_models_v3/cnn_v3_{game_numbers}_bs_{batch_size}.h5'
 # stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
 
 class ChessAI:
@@ -26,6 +28,7 @@ class ChessAI:
         # self.stockfish = Stockfish(path=stockfish_path)
         self.ai_move_scores = []
         self.human_move_scores = []
+        self.pretrained_model = False
         if os.path.exists(MODEL_PATH):
             self.model = keras.models.load_model(MODEL_PATH)
             print("Model loaded from disk.")
@@ -87,44 +90,6 @@ class ChessAI:
 
         return input_matrix
 
-    def train_on_pgn_chunks(self, num_chunks):
-        chunks_dir = 'split_pgn_files'
-        chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
-
-        for chunk_index, chunk_file in enumerate(chunk_files):
-            if not os.path.exists(chunk_file):
-                print(f"Chunk file {chunk_file} does not exist.")
-                continue
-
-            print(f"Training on chunk {chunk_index + 1}/{num_chunks}")
-            with open(chunk_file) as f:
-                game_number = 0
-                while True:
-                    game = chess.pgn.read_game(f)
-                    if game is None:
-                        break
-                    board = game.board()
-                    for move in game.mainline_moves():
-                        input_matrix = self.board_to_input(board)
-                        input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
-
-                        # Create target matrices
-                        start_square = np.zeros((8, 8))
-                        end_square = np.zeros((8, 8))
-
-                        # Set the start and end positions
-                        start_row, start_col = move.from_square // 8, move.from_square % 8
-                        end_row, end_col = move.to_square // 8, move.to_square % 8
-                        start_square[start_row, start_col] = 1
-                        end_square[end_row, end_col] = 1
-
-                        start_square = np.expand_dims(start_square, axis=0)  # Add batch dimension
-                        end_square = np.expand_dims(end_square, axis=0)  # Add batch dimension
-                        self.model.fit(input_matrix, [start_square, end_square], verbose=0)
-                        board.push(move)
-                    game_number += 1
-                    print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
-
     def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
         chunks_dir = 'split_pgn_files'
         chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
@@ -174,6 +139,9 @@ class ChessAI:
 
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
+            print("Training done on chunk ", chunk_index + 1)
+            game_nb = (chunk_index + 1) * 500
+            save_path = f'./cnn_models_v3/cnn_v3_{game_nb}.h5'
 
 
 
@@ -202,9 +170,12 @@ class ChessAI:
         best_move = move_scores[0][0] if move_scores else None
         return best_move
 
-    def save_model(self,MODEL_PATH):
-        self.model.save(MODEL_PATH)
-        print("Model saved to disk.")
+    def save_model(self, MODEL_PATH):
+        if os.path.exists(MODEL_PATH):
+            print(f"Model already exists at {MODEL_PATH}. Skipping save.")
+        else:
+            self.model.save(MODEL_PATH)
+            print("Model saved to disk.")
 
     '''
     Scores the move that was just made by comparing the move to stockfish's top n moves (max 20)
