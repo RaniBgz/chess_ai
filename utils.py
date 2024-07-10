@@ -1,4 +1,4 @@
-''' Utils functions for the chess game
+''' Utils functions for the chess game'''
 
 def board_to_fen(gs):
     # Define the mappings for row to rank and column to file
