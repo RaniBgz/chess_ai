@@ -72,7 +72,3 @@ class Metrics:
             return []
         return top_moves or []
         # print("Top moves: ", top_moves)
-
-
-    def __str__(self):
-        return str(self.metrics)

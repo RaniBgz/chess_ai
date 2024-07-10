@@ -11,12 +11,13 @@ import os
 num_chunks = 2
 batch_size = 4
 
-model_path = f'./cnn_models_v3/cnn_v3_{num_chunks}_bs_{batch_size}.h5'
+model_path = f'./cnn_models_v3/cnn_v3_1_bs_4.h5'
 
 class ChessAI:
-    def __init__(self, pretrained=False, MODEL_PATH=""):
+    def __init__(self, pretrained=False, MODEL_PATH="", num_chunks_seen=0):
         print("Model path: ", MODEL_PATH)
         self.pretrained = pretrained
+        self.num_chunks_seen = num_chunks_seen
         if os.path.exists(MODEL_PATH):
             self.model = keras.models.load_model(MODEL_PATH)
             print("Model loaded from disk.")
@@ -83,6 +84,9 @@ class ChessAI:
         chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
 
         for chunk_index, chunk_file in enumerate(chunk_files):
+            if chunk_index < self.num_chunks_seen:
+                continue  # Skip chunks that have already been seen
+
             if not os.path.exists(chunk_file):
                 print(f"Chunk file {chunk_file} does not exist.")
                 continue
@@ -128,8 +132,61 @@ class ChessAI:
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
             print("Training done on chunk ", chunk_index + 1)
-            save_path = f'./cnn_models_v3/cnn_v3_{chunk_index}_bs_{batch_size}.h5'
+            save_path = f'./cnn_models_v3/cnn_v3_{chunk_index + 1}_bs_{batch_size}.h5'
             self.save_model(save_path)
+
+    # def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
+    #     chunks_dir = 'split_pgn_files'
+    #     chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
+    #
+    #     for chunk_index, chunk_file in enumerate(chunk_files):
+    #         if not os.path.exists(chunk_file):
+    #             print(f"Chunk file {chunk_file} does not exist.")
+    #             continue
+    #
+    #         print(f"Training on chunk {chunk_index + 1}/{num_chunks}")
+    #         inputs, targets_start, targets_end = [], [], []
+    #         with open(chunk_file) as f:
+    #             game_number = 0
+    #             while True:
+    #                 game = chess.pgn.read_game(f)
+    #                 if game is None:
+    #                     break
+    #                 board = game.board()
+    #                 for move in game.mainline_moves():
+    #                     input_matrix = self.board_to_input(board)
+    #
+    #                     # Create target matrices
+    #                     start_square = np.zeros((8, 8))
+    #                     end_square = np.zeros((8, 8))
+    #
+    #                     # Set the start and end positions
+    #                     start_row, start_col = move.from_square // 8, move.from_square % 8
+    #                     end_row, end_col = move.to_square // 8, move.to_square % 8
+    #                     start_square[start_row, start_col] = 1
+    #                     end_square[end_row, end_col] = 1
+    #
+    #                     inputs.append(input_matrix)
+    #                     targets_start.append(start_square)
+    #                     targets_end.append(end_square)
+    #
+    #                     # Train in batches
+    #                     if len(inputs) >= batch_size:
+    #                         self.model.fit(np.array(inputs), [np.array(targets_start), np.array(targets_end)], verbose=0)
+    #                         inputs, targets_start, targets_end = [], [], []
+    #
+    #                     board.push(move)
+    #
+    #                 # Train remaining samples if any
+    #                 if inputs:
+    #                     self.model.fit(np.array(inputs), [np.array(targets_start), np.array(targets_end)], verbose=0)
+    #                     inputs, targets_start, targets_end = [], [], []
+    #
+    #                 game_number += 1
+    #                 print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
+    #         print("Training done on chunk ", chunk_index + 1)
+    #         save_path = f'./cnn_models_v3/cnn_v3_{chunk_index}_bs_{batch_size}.h5'
+    #         self.save_model(save_path)
 
 
 
@@ -185,15 +242,22 @@ def chess_state_to_board(gs):
     return chess.Board(fen)
 
 if __name__ == "__main__":
+    pretrained = os.path.exists(model_path)
+    print("Pretrained is ", pretrained)
+    num_chunks_seen = 0
+    if pretrained:
+        num_chunks_seen = int(model_path.split('_')[-3])
+        print("Num chunks seen is ", num_chunks_seen)
 
     print("Initializing chessAI")
-    ai = ChessAI(MODEL_PATH=model_path)
+    print("Initializing chessAI")
+    ai = ChessAI(MODEL_PATH=model_path, pretrained=pretrained, num_chunks_seen=num_chunks_seen)
 
     print("Training on PGN data chunks...")
     start_time = time.time()
     ai.train_on_pgn_chunks_batch(num_chunks=num_chunks, batch_size=batch_size)  # Train the AI on PGN data chunks
 
-    ai.save_model(model_path)
+    # ai.save_model(model_path)
     end_time = time.time()
     print(f"Training completed in {end_time - start_time} seconds")
 
