@@ -18,12 +18,12 @@ game_numbers = num_chunks * 500
 batch_size = 4
 
 model_path = f'./cnn_models_v3/cnn_v3_{game_numbers}.h5'
-stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
+# stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
 
 class ChessAI:
     def __init__(self, MODEL_PATH=""):
         print("Model path: ", MODEL_PATH)
-        self.stockfish = Stockfish(path=stockfish_path)
+        # self.stockfish = Stockfish(path=stockfish_path)
         self.ai_move_scores = []
         self.human_move_scores = []
         if os.path.exists(MODEL_PATH):
