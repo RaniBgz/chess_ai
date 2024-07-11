@@ -139,9 +139,9 @@ class ChessAI:
                         inputs, targets_start, targets_end = [], [], []
 
                     game_number += 1
-                    print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
-            print("Training done on chunk ", chunk_index + 1)
-            save_path = os.path.join(".", model_folder, base_model_name, f'_{chunk_index+1}', f'_bs_{batch_size}',
+                    print(f"Trained on game {game_number} in chunk {chunk_index}")
+            print("Training done on chunk ", chunk_index)
+            save_path = os.path.join(".", model_folder, base_model_name, f'_{chunk_index}', f'_bs_{batch_size}',
                                       model_extension)
             self.save_model(save_path)
 
