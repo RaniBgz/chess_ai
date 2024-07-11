@@ -1,4 +1,6 @@
 import multiprocessing
+import time
+
 import pygame as p
 import yaml
 import os
@@ -61,6 +63,7 @@ def main():
     n_top_moves = 10
 
     metrics = Metrics()
+    metrics_saved = False
 
     evaluations = []
 
@@ -168,9 +171,12 @@ def main():
             drawText(screen, 'Stalemate')
 
         if gameOver:
-            # avg_accuracy = metrics.compute_average_accuracy()
-            metrics.save_plot()
-            # plt.show()  # Show the plot when the game is over
+            if not metrics_saved:
+                metrics.plot_ai_accuracy()
+                metrics.save_plot('ai_accuracy_plot.png')
+                metrics_saved = True
+            time.sleep(5)
+            running = False
 
         clock.tick(MAX_FPS)
         p.display.flip()

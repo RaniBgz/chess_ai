@@ -11,38 +11,34 @@ from collections import deque
 from utils import board_to_fen
 
 stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
+plot_path = './metrics/ai_accuracy.png'
 
 class Metrics:
     def __init__(self):
         self.stockfish = Stockfish(path=stockfish_path)
         self.ai_move_scores = []
         self.ai_accuracies = []
-
-        # Set up the plotting figure and axis
-        self.fig, self.ax = plt.subplots()
-        self.line, = self.ax.plot([], [], 'r-')  # Initialize the line for AI accuracies
-        self.ax.set_xlim(0, 100)  # Set x-axis limit (adjust as needed)
-        self.ax.set_ylim(0, 100)  # Set y-axis limit (0 to 100% accuracy)
-        self.ax.set_xlabel('Move Number')
-        self.ax.set_ylabel('Accuracy')
-        self.ax.set_title('AI Move Accuracy Over Time')
-
         # Initialize the animation
         # self.ani = animation.FuncAnimation(self.fig, self.update_plot, interval=1000, blit=True)
+    def plot_ai_accuracy(self):
+        if not self.ai_move_scores:
+            return
+        move_scores = [move[1] for move in self.ai_move_scores]
+        plt.plot(move_scores)
+        plt.xlabel('Move Number')
+        plt.ylabel('Accuracy')
+        plt.title('AI Move Accuracy')
+        # plt.show()
 
-    def save_plot(self, filename='./metrics/ai_accuracy_plot.png'):
-        # Save the plot to a file
-        self.fig.savefig(filename)
-        print(f"Plot saved as {filename}")
-
-    def update_plot(self):
-        # Update the plot with new data
-        xdata = list(range(1, len(self.ai_accuracies) + 1))
-        ydata = self.ai_accuracies
-        self.line.set_data(xdata, ydata)
-        self.ax.set_xlim(0, max(100, len(self.ai_accuracies) + 1))  # Dynamically adjust x-axis limit
-        return self.line,
-
+    def save_plot(self, path=plot_path):
+        if not self.ai_move_scores:
+            return
+        move_scores = [move[1] for move in self.ai_move_scores]
+        plt.plot(move_scores)
+        plt.xlabel('Move Number')
+        plt.ylabel('Accuracy')
+        plt.title('AI Move Accuracy')
+        plt.savefig(path)
 
     '''
     Scores the move that was just made by comparing the move to stockfish's top n moves (max 20)
@@ -69,7 +65,6 @@ class Metrics:
         self.ai_accuracies.append(move_accuracy)
         print(f"AI move scores: {self.ai_move_scores}")
         self.compute_average_accuracy()
-        self.update_plot()
         # print(f"Human move scores: {self.human_move_scores}")
 
 

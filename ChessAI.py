@@ -8,14 +8,14 @@ import os
 
 #TODO: make training fault-resilient
 
-num_chunks = 50
+num_chunks = 100
 batch_size = 1
 
-model_folder = 'cnn_models_v4'
+model_folder = './cnn_models_v4'
 base_model_name = 'cnn_v4'
 model_extension = '.h5'
 pretrained_chunks = 1
-model_path = os.path.join(".", model_folder, base_model_name, f'_{pretrained_chunks}', f'_bs_{batch_size}', model_extension)
+model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
 
 class ChessAI:
     def __init__(self, pretrained=False, MODEL_PATH="", num_chunks_seen=0):
@@ -35,7 +35,7 @@ class ChessAI:
         # self.tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=self.log_dir, histogram_freq=1)
 
     def create_model(self):
-        input_layer = keras.Input(shape=(8, 8, 12))
+        input_layer = keras.Input(shape=(12, 8, 8))
 
         # Convolutional layers with 32 filters
         x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
@@ -72,19 +72,22 @@ class ChessAI:
         model = keras.Model(inputs=input_layer, outputs=[start_square, end_square])
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-        print("Model summary:", model.summary())
         return model
 
     def board_to_input(self, board):
         piece_chars = 'PRNBQKprnbqk'
-        input_matrix = np.zeros((8, 8, 12))
+        input_matrix = np.zeros((12, 8, 8))
+        # print("Board is ", board)
+        # print("Input matrix is ", input_matrix)
 
         for i in range(64):
             piece = board.piece_at(i)
+            # print("Piece is ", piece)
             if piece:
                 row = i // 8
                 col = i % 8
-                input_matrix[row, col, piece_chars.index(piece.symbol())] = 1
+                # print(f"Row: {row}, Col: {col}, Piece: {piece.symbol()}, Piece index: {piece_chars.index(piece.symbol())}")
+                input_matrix[piece_chars.index(piece.symbol()), row, col] = 1
 
         return input_matrix
 
@@ -141,8 +144,8 @@ class ChessAI:
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index}")
             print("Training done on chunk ", chunk_index)
-            save_path = os.path.join(".", model_folder, base_model_name, f'_{chunk_index}', f'_bs_{batch_size}',
-                                      model_extension)
+            save_path = os.path.join(f'.{model_folder,}',
+                                      f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
             self.save_model(save_path)
 
     # def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
@@ -207,8 +210,11 @@ class ChessAI:
             return None
 
         input_matrix = self.board_to_input(board)
+        print(f"Input matrix {input_matrix}")
         input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
         start_predictions, end_predictions = self.model.predict(input_matrix)
+        print(f"Start predictions {start_predictions}")
+        print(f"End predictions {end_predictions}")
 
         start_predictions = start_predictions.reshape(64)
         end_predictions = end_predictions.reshape(64)
