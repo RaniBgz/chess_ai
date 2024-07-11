@@ -8,10 +8,10 @@ import os
 
 #TODO: make training fault-resilient
 
-num_chunks = 2
-batch_size = 4
+num_chunks = 50
+batch_size = 1
 
-model_path = f'./cnn_models_v3/cnn_v3_1_bs_4.h5'
+model_path = f'./cnn_models_v4/cnn_v4_1_bs_1.h5'
 
 class ChessAI:
     def __init__(self, pretrained=False, MODEL_PATH="", num_chunks_seen=0):
@@ -36,9 +36,11 @@ class ChessAI:
         # Convolutional layers with 32 filters
         x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
         x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
         x = keras.layers.MaxPooling2D((2, 2))(x)
 
         # Convolutional layers with 64 filters
+        x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
         x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
         x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
         x = keras.layers.MaxPooling2D((2, 2))(x)
@@ -46,11 +48,13 @@ class ChessAI:
         # Convolutional layers with 128 filters
         x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
         x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.GlobalAveragePooling2D()(x)
-        # x = keras.layers.Flatten()(x)
+        x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+        # x = keras.layers.GlobalAveragePooling2D()(x)
+        x = keras.layers.Flatten()(x)
 
         # Dense layer
-        dense1 = keras.layers.Dense(512, activation='relu')(x)
+        dense1 = keras.layers.Dense(1024, activation='relu')(x)
+        dense1 = keras.layers.Dropout(0.5)(dense1)
 
         # Output layers for starting and ending squares
         start_square = keras.layers.Dense(64, activation='softmax')(dense1)
@@ -64,6 +68,7 @@ class ChessAI:
         model = keras.Model(inputs=input_layer, outputs=[start_square, end_square])
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        print("Model summary:", model.summary())
         return model
 
     def board_to_input(self, board):

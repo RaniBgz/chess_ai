@@ -5,6 +5,7 @@ import os
 from Chess import ChessState
 from ChessAI import ChessAI, chess_state_to_board
 from metrics import Metrics
+import matplotlib.pyplot as plt
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8  # 8*8 board
@@ -167,7 +168,9 @@ def main():
             drawText(screen, 'Stalemate')
 
         if gameOver:
-            avg_accuracy = metrics.compute_average_accuracy()
+            # avg_accuracy = metrics.compute_average_accuracy()
+            metrics.save_plot()
+            # plt.show()  # Show the plot when the game is over
 
         clock.tick(MAX_FPS)
         p.display.flip()
