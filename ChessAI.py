@@ -11,7 +11,11 @@ import os
 num_chunks = 50
 batch_size = 1
 
-model_path = f'./cnn_models_v4/cnn_v4_1_bs_1.h5'
+model_folder = 'cnn_models_v4'
+base_model_name = 'cnn_v4'
+model_extension = '.h5'
+pretrained_chunks = 1
+model_path = os.path.join(".", model_folder, base_model_name, f'_{pretrained_chunks}', f'_bs_{batch_size}', model_extension)
 
 class ChessAI:
     def __init__(self, pretrained=False, MODEL_PATH="", num_chunks_seen=0):
@@ -137,7 +141,8 @@ class ChessAI:
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index + 1}")
             print("Training done on chunk ", chunk_index + 1)
-            save_path = f'./cnn_models_v3/cnn_v3_{chunk_index + 1}_bs_{batch_size}.h5'
+            save_path = os.path.join(".", model_folder, base_model_name, f'_{chunk_index+1}', f'_bs_{batch_size}',
+                                      model_extension)
             self.save_model(save_path)
 
     # def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
