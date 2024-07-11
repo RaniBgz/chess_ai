@@ -230,7 +230,7 @@ class ChessAI:
             print(f"Model already exists at {MODEL_PATH}. Skipping save.")
         else:
             self.model.save(MODEL_PATH)
-            print("Model saved to disk.")
+            print("Model saved to disk at path: ", MODEL_PATH)
 
 def chess_state_to_board(gs):
     fen = ""
