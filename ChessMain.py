@@ -173,9 +173,9 @@ def main():
         if gameOver:
             if not metrics_saved:
                 metrics.plot_ai_accuracy()
-                metrics.save_plot('ai_accuracy_plot.png')
+                metrics.save_plot('./metrics/ai_accuracy_plot.png')
                 metrics_saved = True
-            time.sleep(5)
+            time.sleep(2)
             running = False
 
         clock.tick(MAX_FPS)

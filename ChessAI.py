@@ -144,8 +144,7 @@ class ChessAI:
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index}")
             print("Training done on chunk ", chunk_index)
-            save_path = os.path.join(f'.{model_folder,}',
-                                      f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
+            save_path = os.path.join(model_folder,f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
             self.save_model(save_path)
 
     # def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
@@ -210,11 +209,11 @@ class ChessAI:
             return None
 
         input_matrix = self.board_to_input(board)
-        print(f"Input matrix {input_matrix}")
+        # print(f"Input matrix {input_matrix}")
         input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
         start_predictions, end_predictions = self.model.predict(input_matrix)
-        print(f"Start predictions {start_predictions}")
-        print(f"End predictions {end_predictions}")
+        # print(f"Start predictions {start_predictions}")
+        # print(f"End predictions {end_predictions}")
 
         start_predictions = start_predictions.reshape(64)
         end_predictions = end_predictions.reshape(64)
