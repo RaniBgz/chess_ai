@@ -60,6 +60,7 @@ def main():
     playerOne = True  # If a human is playing white, else False
     playerTwo = False  # If a human is playing black, else False
     n_top_moves = 10
+    winner = "Tie"
 
     metrics = Metrics()
     metrics_saved = False
@@ -172,6 +173,8 @@ def main():
         if gameOver:
             if not metrics_saved:
                 threading.Thread(target=plot_accuracy, args=(metrics,)).start()
+                winner = 'White' if gs.whiteToMove else 'Black'
+                threading.Thread(target=save_game_summary, args=(metrics, winner,)).start()
                 metrics_saved = True
             time.sleep(2)
             running = False
@@ -185,8 +188,11 @@ def main():
 
 def plot_accuracy(metrics):
     print("Inside plot accuracy in main")
-    metrics.plot_ai_accuracy()
     metrics.save_plot()
+
+def save_game_summary(metrics, winner):
+    print("Inside plot accuracy in main")
+    metrics.save_game_summary(winner)
 
 
 

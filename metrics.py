@@ -16,33 +16,22 @@ from datetime import datetime
 
 stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
 metrics_path = './metrics'
-plot_path = './metrics/ai_accuracy.png'
 
 class Metrics:
     def __init__(self):
         self.stockfish = Stockfish(path=stockfish_path)
         self.ai_move_scores = []
         self.ai_accuracies = []
-        self.plot_dir = self.initialize_plot_dir()
+        self.initialize_plot_dir()
         # Initialize the animation
         # self.ani = animation.FuncAnimation(self.fig, self.update_plot, interval=1000, blit=True)
 
     def initialize_plot_dir(self):
-        timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        self.plot_dir = os.path.join(metrics_path, timestamp)
+        self.game_start_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.plot_dir = os.path.join(metrics_path, self.game_start_time)
         os.makedirs(self.plot_dir, exist_ok=True)
         self.plot_path = os.path.join(self.plot_dir, 'ai_accuracy_plot.png')
 
-
-    def plot_ai_accuracy(self):
-        if not self.ai_move_scores:
-            return
-        move_scores = [move[1] for move in self.ai_move_scores]
-        plt.plot(move_scores)
-        plt.xlabel('Move Number')
-        plt.ylabel('Accuracy')
-        plt.title('AI Move Accuracy')
-        # plt.show()
 
     def save_plot(self):
         if not self.ai_move_scores:
@@ -53,6 +42,22 @@ class Metrics:
         plt.ylabel('Accuracy')
         plt.title('AI Move Accuracy')
         plt.savefig(self.plot_path)
+
+    def save_game_summary(self, winner):
+        if not self.ai_move_scores:
+            return
+
+        average_accuracy = sum([move[1] for move in self.ai_move_scores]) / len(self.ai_move_scores)
+        summary = {
+            'game_start_time': self.game_start_time,
+            'average_accuracy': average_accuracy,
+            'winner': winner
+        }
+        print("self plot dir: ", self.plot_dir)
+        summary_path = os.path.join(self.plot_dir, 'game_summary.json')
+        print("Summary path is: ", summary_path)
+        with open(summary_path, 'w') as f:
+            json.dump(summary, f, indent=4)
 
     '''
     Scores the move that was just made by comparing the move to stockfish's top n moves (max 20)
