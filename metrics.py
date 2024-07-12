@@ -3,14 +3,19 @@ The metrics class is used to store the accuracy of the moves made by the agent.
 '''
 import chess
 import chess.pgn
-import time
+import os
+import json
 from stockfish import Stockfish
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from collections import deque
 from utils import board_to_fen
+from datetime import datetime
 
 stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
+metrics_path = './metrics'
 plot_path = './metrics/ai_accuracy.png'
 
 class Metrics:
@@ -18,8 +23,17 @@ class Metrics:
         self.stockfish = Stockfish(path=stockfish_path)
         self.ai_move_scores = []
         self.ai_accuracies = []
+        self.plot_dir = self.initialize_plot_dir()
         # Initialize the animation
         # self.ani = animation.FuncAnimation(self.fig, self.update_plot, interval=1000, blit=True)
+
+    def initialize_plot_dir(self):
+        timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        self.plot_dir = os.path.join(metrics_path, timestamp)
+        os.makedirs(self.plot_dir, exist_ok=True)
+        self.plot_path = os.path.join(self.plot_dir, 'ai_accuracy_plot.png')
+
+
     def plot_ai_accuracy(self):
         if not self.ai_move_scores:
             return
@@ -30,7 +44,7 @@ class Metrics:
         plt.title('AI Move Accuracy')
         # plt.show()
 
-    def save_plot(self, path=plot_path):
+    def save_plot(self):
         if not self.ai_move_scores:
             return
         move_scores = [move[1] for move in self.ai_move_scores]
@@ -38,7 +52,7 @@ class Metrics:
         plt.xlabel('Move Number')
         plt.ylabel('Accuracy')
         plt.title('AI Move Accuracy')
-        plt.savefig(path)
+        plt.savefig(self.plot_path)
 
     '''
     Scores the move that was just made by comparing the move to stockfish's top n moves (max 20)

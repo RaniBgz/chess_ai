@@ -1,13 +1,12 @@
 import multiprocessing
 import time
-
+import threading
 import pygame as p
 import yaml
 import os
 from Chess import ChessState
 from ChessAI import ChessAI, chess_state_to_board
 from metrics import Metrics
-import matplotlib.pyplot as plt
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8  # 8*8 board
@@ -172,8 +171,7 @@ def main():
 
         if gameOver:
             if not metrics_saved:
-                metrics.plot_ai_accuracy()
-                metrics.save_plot('./metrics/ai_accuracy_plot.png')
+                threading.Thread(target=plot_accuracy, args=(metrics,)).start()
                 metrics_saved = True
             time.sleep(2)
             running = False
@@ -184,6 +182,13 @@ def main():
     # Print the evaluation summary at the end of the game
     # for move, evaluation in evaluations:
     #     print(f"Move: {move}, Evaluation: {evaluation}")
+
+def plot_accuracy(metrics):
+    print("Inside plot accuracy in main")
+    metrics.plot_ai_accuracy()
+    metrics.save_plot()
+
+
 
 def highlightSquares(screen, gs, validMoves, sqSelected):
     if sqSelected != ():
