@@ -37,25 +37,22 @@ class ChessAI:
     def create_model(self):
         input_layer = keras.Input(shape=(12, 8, 8))
 
-        # Convolutional layers with 64 filters
-        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(input_layer)
+        x = keras.layers.Conv2D(32, (8, 8), activation='relu', padding='same')(input_layer)
+        x = keras.layers.Conv2D(32, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(32, (8, 8), activation='relu', padding='same')(x)
+
+        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
         x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
         x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
 
-        # Convolutional layers with 128 filters
-        x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
-
-        # Convolutional layers with 256 filters
-        x = keras.layers.Conv2D(256, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(256, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(256, (8, 8), activation='relu', padding='same')(x)
+        # x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
+        # x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
+        # x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
 
         x = keras.layers.Flatten()(x)
 
         # Dense layer
-        dense1 = keras.layers.Dense(2048, activation='relu')(x)
+        dense1 = keras.layers.Dense(1024, activation='relu')(x)
         dense1 = keras.layers.Dropout(0.5)(dense1)
 
         # Output layers for starting and ending squares
