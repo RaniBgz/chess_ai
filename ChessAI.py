@@ -11,10 +11,10 @@ import os
 num_chunks = 100
 batch_size = 1
 
-model_folder = './cnn_models_v4'
-base_model_name = 'cnn_v4'
+model_folder = './cnn_models_v5'
+base_model_name = 'cnn_v5'
 model_extension = '.h5'
-pretrained_chunks = 1
+pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
 
 class ChessAI:
@@ -37,27 +37,25 @@ class ChessAI:
     def create_model(self):
         input_layer = keras.Input(shape=(12, 8, 8))
 
-        # Convolutional layers with 32 filters
-        x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
-        x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.MaxPooling2D((2, 2))(x)
-
         # Convolutional layers with 64 filters
-        x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.MaxPooling2D((2, 2))(x)
+        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(input_layer)
+        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
 
         # Convolutional layers with 128 filters
-        x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-        # x = keras.layers.GlobalAveragePooling2D()(x)
+        x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
+
+        # Convolutional layers with 256 filters
+        x = keras.layers.Conv2D(256, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(256, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(256, (8, 8), activation='relu', padding='same')(x)
+
         x = keras.layers.Flatten()(x)
 
         # Dense layer
-        dense1 = keras.layers.Dense(1024, activation='relu')(x)
+        dense1 = keras.layers.Dense(2048, activation='relu')(x)
         dense1 = keras.layers.Dropout(0.5)(dense1)
 
         # Output layers for starting and ending squares
@@ -72,7 +70,48 @@ class ChessAI:
         model = keras.Model(inputs=input_layer, outputs=[start_square, end_square])
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        print("Model Summary: ", model.summary())
         return model
+
+    # def create_model(self):
+    #     input_layer = keras.Input(shape=(12, 8, 8))
+    #
+    #     # Convolutional layers with 32 filters
+    #     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
+    #     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.MaxPooling2D((2, 2))(x)
+    #
+    #     # Convolutional layers with 64 filters
+    #     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.MaxPooling2D((2, 2))(x)
+    #
+    #     # Convolutional layers with 128 filters
+    #     x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    #     x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    #     # x = keras.layers.GlobalAveragePooling2D()(x)
+    #     x = keras.layers.Flatten()(x)
+    #
+    #     # Dense layer
+    #     dense1 = keras.layers.Dense(1024, activation='relu')(x)
+    #     dense1 = keras.layers.Dropout(0.5)(dense1)
+    #
+    #     # Output layers for starting and ending squares
+    #     start_square = keras.layers.Dense(64, activation='softmax')(dense1)
+    #     end_square = keras.layers.Dense(64, activation='softmax')(dense1)
+    #
+    #     # Reshape to 8x8 matrices
+    #     start_square = keras.layers.Reshape((8, 8))(start_square)
+    #     end_square = keras.layers.Reshape((8, 8))(end_square)
+    #
+    #     # Create model
+    #     model = keras.Model(inputs=input_layer, outputs=[start_square, end_square])
+    #
+    #     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    #     return model
 
     def board_to_input(self, board):
         piece_chars = 'PRNBQKprnbqk'
