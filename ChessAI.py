@@ -9,10 +9,10 @@ import os
 #TODO: make training fault-resilient
 
 num_chunks = 100
-batch_size = 1
+batch_size = 4
 
-model_folder = './cnn_models_v5'
-base_model_name = 'cnn_v5'
+model_folder = './cnn_models_v6'
+base_model_name = 'cnn_v6'
 model_extension = '.h5'
 pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
@@ -37,22 +37,35 @@ class ChessAI:
     def create_model(self):
         input_layer = keras.Input(shape=(12, 8, 8))
 
-        x = keras.layers.Conv2D(32, (8, 8), activation='relu', padding='same')(input_layer)
-        x = keras.layers.Conv2D(32, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(32, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(32, (3, 3), padding='same')(input_layer)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
 
-        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
-        x = keras.layers.Conv2D(64, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(32, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
 
-        # x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
-        # x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
-        # x = keras.layers.Conv2D(128, (8, 8), activation='relu', padding='same')(x)
+        x = keras.layers.Conv2D(32, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
+
+        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
+
+        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
+
+        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
 
         x = keras.layers.Flatten()(x)
 
-        # Dense layer
-        dense1 = keras.layers.Dense(1024, activation='relu')(x)
+        dense1 = keras.layers.Dense(1024)(x)
+        dense1 = keras.layers.BatchNormalization()(dense1)
+        dense1 = keras.layers.Activation('relu')(dense1)
         dense1 = keras.layers.Dropout(0.5)(dense1)
 
         # Output layers for starting and ending squares
@@ -70,45 +83,6 @@ class ChessAI:
         print("Model Summary: ", model.summary())
         return model
 
-    # def create_model(self):
-    #     input_layer = keras.Input(shape=(12, 8, 8))
-    #
-    #     # Convolutional layers with 32 filters
-    #     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(input_layer)
-    #     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.MaxPooling2D((2, 2))(x)
-    #
-    #     # Convolutional layers with 64 filters
-    #     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.MaxPooling2D((2, 2))(x)
-    #
-    #     # Convolutional layers with 128 filters
-    #     x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    #     x = keras.layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
-    #     # x = keras.layers.GlobalAveragePooling2D()(x)
-    #     x = keras.layers.Flatten()(x)
-    #
-    #     # Dense layer
-    #     dense1 = keras.layers.Dense(1024, activation='relu')(x)
-    #     dense1 = keras.layers.Dropout(0.5)(dense1)
-    #
-    #     # Output layers for starting and ending squares
-    #     start_square = keras.layers.Dense(64, activation='softmax')(dense1)
-    #     end_square = keras.layers.Dense(64, activation='softmax')(dense1)
-    #
-    #     # Reshape to 8x8 matrices
-    #     start_square = keras.layers.Reshape((8, 8))(start_square)
-    #     end_square = keras.layers.Reshape((8, 8))(end_square)
-    #
-    #     # Create model
-    #     model = keras.Model(inputs=input_layer, outputs=[start_square, end_square])
-    #
-    #     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    #     return model
 
     def board_to_input(self, board):
         piece_chars = 'PRNBQKprnbqk'
@@ -145,11 +119,15 @@ class ChessAI:
                 game_number = 0
                 while True:
                     game = chess.pgn.read_game(f)
+                    # print("Game: ", game)
                     if game is None:
                         break
                     board = game.board()
+                    # print("Board: ", board)
                     for move in game.mainline_moves():
+                        # print("Move is ", move)
                         input_matrix = self.board_to_input(board)
+                        # print("Input matrix is ", input_matrix)
 
                         # Create target matrices
                         start_square = np.zeros((8, 8))
@@ -157,9 +135,14 @@ class ChessAI:
 
                         # Set the start and end positions
                         start_row, start_col = move.from_square // 8, move.from_square % 8
+                        # print("Start row and col: ", start_row, start_col)
                         end_row, end_col = move.to_square // 8, move.to_square % 8
+                        # print("End row and col: ", end_row, end_col)
                         start_square[start_row, start_col] = 1
                         end_square[end_row, end_col] = 1
+
+                        # print("Start square is ", start_square)
+                        # print("End square is ", end_square)
 
                         inputs.append(input_matrix)
                         targets_start.append(start_square)
@@ -206,6 +189,7 @@ class ChessAI:
             end_square_score = end_predictions[move.to_square]
             move_score = start_square_score * end_square_score
             move_scores.append((move, move_score))
+            # print (f"Move: {move}, Score: {move_score}")
 
         move_scores.sort(key=lambda x: x[1], reverse=True)
 

@@ -18,8 +18,9 @@ stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
 metrics_path = './metrics'
 
 class Metrics:
-    def __init__(self):
+    def __init__(self, model_name=''):
         self.stockfish = Stockfish(path=stockfish_path)
+        self.model_name = model_name
         self.ai_move_scores = []
         self.ai_accuracies = []
         self.initialize_plot_dir()
@@ -37,21 +38,27 @@ class Metrics:
         if not self.ai_move_scores:
             return
         move_scores = [move[1] for move in self.ai_move_scores]
+        average_accuracy = sum(move_scores) / len(move_scores) if move_scores else 0
         plt.plot(move_scores)
         plt.xlabel('Move Number')
         plt.ylabel('Accuracy')
-        plt.title('AI Move Accuracy')
+        plt.title(f'AI Move Accuracy (Average: {average_accuracy:.2f}%)')
+        plt.suptitle(f'Model: {self.model_name}', fontsize=10)
         plt.savefig(self.plot_path)
 
-    def save_game_summary(self, winner):
+    def save_game_summary(self, winner, total_ai_moves=0, replaced_moves=0):
         if not self.ai_move_scores:
             return
-
+        replaced_moves_percentage = (replaced_moves / total_ai_moves) * 100 if total_ai_moves > 0 else 0
         average_accuracy = sum([move[1] for move in self.ai_move_scores]) / len(self.ai_move_scores)
         summary = {
             'game_start_time': self.game_start_time,
+            'model_name': self.model_name,
             'average_accuracy': average_accuracy,
-            'winner': winner
+            'winner': winner,
+            'total_ai_moves': total_ai_moves,
+            'replaced_moves': replaced_moves,
+            'replaced_moves_percentage': replaced_moves_percentage,
         }
         print("self plot dir: ", self.plot_dir)
         summary_path = os.path.join(self.plot_dir, 'game_summary.json')
@@ -69,7 +76,7 @@ class Metrics:
         move_index = -1
         move_accuracy = 0.0
         for i in range(0, len(top_moves)):
-            print(f"Top move {i}: {top_moves[i]['Move']}")
+            # print(f"Top move {i}: {top_moves[i]['Move']}")
             if top_moves[i]['Move'] == move:
                 move_index = i
                 break

@@ -6,6 +6,8 @@
 /cnn_models_v2/
 /cnn_models_v3/
 /cnn_models_v4/*
+/cnn_models_v5/
+/cnn_models_v6/
 /metrics/*
 /logs/
 /eval_stockfish/

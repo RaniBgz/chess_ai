@@ -23,7 +23,7 @@ PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
 
-TREE_WIDTH = 1
+TREE_WIDTH = 2
 TREE_DEPTH = 2
 
 # Load configuration
@@ -64,22 +64,24 @@ def main():
     gameOver = False
     playerOne = True  # If a human is playing white, else False
     playerTwo = False  # If a human is playing black, else False
+    last_human_move = None
     n_top_moves = 10
+    total_ai_moves = 0
+    replaced_moves = 0
     winner = "Tie"
 
 
-
-    metrics = Metrics()
     metrics_saved = False
 
     evaluations = []
+    model_name = config['model_path'].split('/')[-1]
+    metrics = Metrics(model_name=model_name)
 
     if os.path.exists(config['model_path']):
         ai = ChessAI(MODEL_PATH=config['model_path'])
     else:
         ai = ChessAI()
 
-    # search_tree = SearchTree(ai, width=TREE_WIDTH, depth=TREE_DEPTH)
     search_tree = SearchTree(ai, width=TREE_WIDTH, depth=TREE_DEPTH)
 
     while running:
@@ -105,6 +107,7 @@ def main():
                             if move == validMoves[i]:
                                 # cn_human_move = validMoves[i].getChessNotation()
                                 # ai.score_move(gs, cn_human_move, humanTurn=True, n_top_moves=n_top_moves)
+                                last_human_move = str(validMoves[i].getChessNotation())
                                 gs.makeMove(validMoves[i])
                                 moveMade = True
                                 animate = True
@@ -130,16 +133,17 @@ def main():
 
         # AI move finder
         if not gameOver and not humanTurn:
-            # board = chess_state_to_board(gs)
-            # ai_move = ai.get_best_move(board)
-            # print("Top AI move is: ", ai_move)
+            board = chess_state_to_board(gs)
+            ai_move = ai.get_best_move(board)
+            print("Top AI move is: ", ai_move)
 
-            tree = search_tree.build_tree(gs)
-            ai_move = search_tree.get_best_direct_move(tree)
+            # tree = search_tree.build_tree(gs, base_move=last_human_move)
+            # ai_move = search_tree.get_best_direct_move(tree)
+            # print("Best move after tree search: ", ai_move)
 
             # tree = search_tree.build_tree(gs)
             # ai_move = min(tree, key=lambda x: x['evaluation'])['move']  # Minimize evaluation
-            print("Best move after tree search: ", ai_move)
+
             # ai_moves = ai.get_top_n_moves(board, n_top_moves)
 
             #Call tree here
@@ -158,6 +162,7 @@ def main():
                         moveMade = True
                         animate = True
                         ai_move_made = True
+                        total_ai_moves += 1
                         break
                 if not ai_move_made:
                     # print("AI couldn't make a valid move. Choosing a random move.")
@@ -165,10 +170,13 @@ def main():
                     if validMoves:
                         random_move = random.choice(validMoves)
                         cn_random_move = random_move.getChessNotation()
+                        print("Chess notation RANDOM MOVE REPLACED : ", cn_random_move)
                         metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
                         gs.makeMove(random_move)
                         moveMade = True
                         animate = True
+                        replaced_moves += 1
+                        total_ai_moves += 1
                     else:
                         print("No valid moves available. Game over.")
                         gameOver = True
@@ -196,9 +204,9 @@ def main():
             if not metrics_saved:
                 threading.Thread(target=plot_accuracy, args=(metrics,)).start()
                 winner = 'White' if gs.whiteToMove else 'Black'
-                threading.Thread(target=save_game_summary, args=(metrics, winner,)).start()
+                threading.Thread(target=save_game_summary, args=(metrics, winner, total_ai_moves, replaced_moves)).start()
                 metrics_saved = True
-            time.sleep(2)
+            time.sleep(1)
             running = False
 
         clock.tick(MAX_FPS)
@@ -212,9 +220,9 @@ def plot_accuracy(metrics):
     print("Inside plot accuracy in main")
     metrics.save_plot()
 
-def save_game_summary(metrics, winner):
+def save_game_summary(metrics, winner, total_ai_moves, replaced_moves):
     print("Inside plot accuracy in main")
-    metrics.save_game_summary(winner)
+    metrics.save_game_summary(winner, total_ai_moves, replaced_moves)
 
 
 
