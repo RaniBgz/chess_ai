@@ -11,10 +11,10 @@ from utils import chess_state_to_board
 #TODO: make training fault-resilient
 
 num_chunks = 100
-batch_size = 4
+batch_size = 8
 
-model_folder = './cnn_models_v6'
-base_model_name = 'cnn_v6'
+model_folder = './cnn_models_v7'
+base_model_name = 'cnn_v7'
 model_extension = '.h5'
 pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
@@ -46,24 +46,30 @@ class ChessAI:
         x = keras.layers.Conv2D(32, (3, 3), padding='same')(input_layer)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
-
+        x = keras.layers.Conv2D(32, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
         x = keras.layers.Conv2D(32, (3, 3), padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
 
-        x = keras.layers.Conv2D(32, (3, 3), padding='same')(x)
+        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
-
+        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
         x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
 
-        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
+        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
-
-        x = keras.layers.Conv2D(64, (3, 3), padding='same')(x)
+        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x)
+        x = keras.layers.BatchNormalization()(x)
+        x = keras.layers.Activation('relu')(x)
+        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x)
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
 
@@ -72,7 +78,6 @@ class ChessAI:
         dense1 = keras.layers.Dense(1024)(x)
         dense1 = keras.layers.BatchNormalization()(dense1)
         dense1 = keras.layers.Activation('relu')(dense1)
-        dense1 = keras.layers.Dropout(0.5)(dense1)
 
         # Output layers for starting and ending squares
         start_square = keras.layers.Dense(64, activation='softmax')(dense1)
@@ -178,6 +183,7 @@ class ChessAI:
         board = chess_state_to_board(gs)
         legal_moves = list(board.legal_moves)
         if not legal_moves:
+            print("No legal moves")
             return None
 
         input_matrix = self.board_to_input(board)
@@ -212,6 +218,7 @@ class ChessAI:
         board = chess_state_to_board(gs)
         legal_moves = list(board.legal_moves)
         if not legal_moves:
+            print("No legal moves")
             return None
 
         input_matrix = self.board_to_input(board)

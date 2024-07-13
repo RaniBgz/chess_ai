@@ -216,8 +216,8 @@ def main():
                 winner = 'White' if gs.whiteToMove else 'Black'
                 threading.Thread(target=save_game_summary, args=(metrics, winner, total_ai_moves, replaced_moves)).start()
                 metrics_saved = True
-            time.sleep(1)
-            running = False
+            # time.sleep(1)
+            # running = False
 
         clock.tick(MAX_FPS)
         p.display.flip()
