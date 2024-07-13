@@ -5,8 +5,10 @@ import pygame as p
 import yaml
 import os
 from Chess import ChessState
-from ChessAI import ChessAI, chess_state_to_board
+from ChessAI import ChessAI
+from utils import chess_state_to_board
 from metrics import Metrics
+from search_tree import SearchTree
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8  # 8*8 board
@@ -20,6 +22,9 @@ PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 # PGN_PATH = './test.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
+
+TREE_WIDTH = 1
+TREE_DEPTH = 2
 
 # Load configuration
 def load_config():
@@ -62,6 +67,8 @@ def main():
     n_top_moves = 10
     winner = "Tie"
 
+
+
     metrics = Metrics()
     metrics_saved = False
 
@@ -71,6 +78,9 @@ def main():
         ai = ChessAI(MODEL_PATH=config['model_path'])
     else:
         ai = ChessAI()
+
+    # search_tree = SearchTree(ai, width=TREE_WIDTH, depth=TREE_DEPTH)
+    search_tree = SearchTree(ai, width=TREE_WIDTH, depth=TREE_DEPTH)
 
     while running:
         humanTurn = (gs.whiteToMove and playerOne) or (not gs.whiteToMove and playerTwo)
@@ -120,8 +130,19 @@ def main():
 
         # AI move finder
         if not gameOver and not humanTurn:
-            board = chess_state_to_board(gs)
-            ai_move = ai.get_best_move(board)
+            # board = chess_state_to_board(gs)
+            # ai_move = ai.get_best_move(board)
+            # print("Top AI move is: ", ai_move)
+
+            tree = search_tree.build_tree(gs)
+            ai_move = search_tree.get_best_direct_move(tree)
+
+            # tree = search_tree.build_tree(gs)
+            # ai_move = min(tree, key=lambda x: x['evaluation'])['move']  # Minimize evaluation
+            print("Best move after tree search: ", ai_move)
+            # ai_moves = ai.get_top_n_moves(board, n_top_moves)
+
+            #Call tree here
 
             print("Human move: ", gs.moveLog[-1].getChessNotation() if gs.moveLog else "None", "AI move: ", ai_move)
             if ai_move:
@@ -131,6 +152,7 @@ def main():
                        move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
                         print("AI making move")
                         cn_move = move.getChessNotation()
+                        print("Chess notation AI move: ", cn_move)
                         metrics.score_move(gs, cn_move, n_top_moves=n_top_moves)
                         gs.makeMove(move)
                         moveMade = True

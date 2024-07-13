@@ -1,10 +1,49 @@
-''' Utils functions for the chess game'''
+''' Utils functions for the chess game, such as converting game chess to board,'''
 
 import os
 import chess
 
 pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
+
+def chess_state_to_board(gs):
+    fen = ""
+    for row in gs.board:
+        empty = 0
+        for piece in row:
+            if piece == "--":
+                empty += 1
+            else:
+                if empty > 0:
+                    fen += str(empty)
+                    empty = 0
+                fen += piece[1].lower() if piece[0] == 'b' else piece[1].upper()
+        if empty > 0:
+            fen += str(empty)
+        fen += "/"
+    fen = fen[:-1]  # remove last slash
+    fen += " w KQkq - 0 1"  # Add default values for now
+    return chess.Board(fen)
+
+
+def chess_state_to_board(gs):
+    fen = ""
+    for row in gs.board:
+        empty = 0
+        for piece in row:
+            if piece == "--":
+                empty += 1
+            else:
+                if empty > 0:
+                    fen += str(empty)
+                    empty = 0
+                fen += piece[1].lower() if piece[0] == 'b' else piece[1].upper()
+        if empty > 0:
+            fen += str(empty)
+        fen += "/"
+    fen = fen[:-1]  # remove last slash
+    fen += " w KQkq - 0 1"  # Add default values for now
+    return chess.Board(fen)
 
 def board_to_fen(gs):
     # Define the mappings for row to rank and column to file
@@ -55,7 +94,6 @@ def board_to_fen(gs):
 
     return fen
 
-
 def split_pgn_file(pgn_file, games_per_chunk=500):
     output_dir = 'split_pgn_files'
     os.makedirs(output_dir, exist_ok=True)
@@ -71,6 +109,8 @@ def split_pgn_file(pgn_file, games_per_chunk=500):
                         return
                     chunk_file.write(str(game) + "\n\n")
             chunk_count += 1
+
+
 
 if __name__ == "__main__":
     pass

@@ -174,7 +174,40 @@ class ChessAI:
         move_scores.sort(key=lambda x: x[1], reverse=True)
 
         best_move = move_scores[0][0] if move_scores else None
+
         return best_move
+
+    def get_top_n_moves(self, board, n=5):
+        legal_moves = list(board.legal_moves)
+        if not legal_moves:
+            return []
+
+        input_matrix = self.board_to_input(board)
+        input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
+        start_predictions, end_predictions = self.model.predict(input_matrix)
+
+        start_predictions = start_predictions.reshape(64)
+        end_predictions = end_predictions.reshape(64)
+
+        move_scores = []
+        for move in legal_moves:
+            start_square_score = start_predictions[move.from_square]
+            end_square_score = end_predictions[move.to_square]
+            move_score = start_square_score * end_square_score
+            move_scores.append((move, move_score))
+
+        move_scores.sort(key=lambda x: x[1], reverse=True)
+
+        # Get the top n moves
+        top_n_moves = move_scores[:n]
+
+        # Extract just the moves
+        top_n_moves = [move[0] for move in top_n_moves]
+
+        print(f"Top {n} moves: {top_n_moves}")
+
+        return top_n_moves
+
 
     def save_model(self, MODEL_PATH):
         if os.path.exists(MODEL_PATH):
@@ -182,25 +215,6 @@ class ChessAI:
         else:
             self.model.save(MODEL_PATH)
             print("Model saved to disk at path: ", MODEL_PATH)
-
-def chess_state_to_board(gs):
-    fen = ""
-    for row in gs.board:
-        empty = 0
-        for piece in row:
-            if piece == "--":
-                empty += 1
-            else:
-                if empty > 0:
-                    fen += str(empty)
-                    empty = 0
-                fen += piece[1].lower() if piece[0] == 'b' else piece[1].upper()
-        if empty > 0:
-            fen += str(empty)
-        fen += "/"
-    fen = fen[:-1]  # remove last slash
-    fen += " w KQkq - 0 1"  # Add default values for now
-    return chess.Board(fen)
 
 if __name__ == "__main__":
     pretrained = os.path.exists(model_path)
