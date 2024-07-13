@@ -5,6 +5,8 @@ import chess
 import chess.pgn
 import time
 import os
+from utils import chess_state_to_board
+
 
 #TODO: make training fault-resilient
 
@@ -18,6 +20,10 @@ pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
 
 class ChessAI:
+    # maps ranks (chess row labels) to row indices
+    ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
+    # maps files (chess column labels) to column indices
+    filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
     def __init__(self, pretrained=False, MODEL_PATH="", num_chunks_seen=0):
         print("Model path: ", MODEL_PATH)
         self.pretrained = pretrained
@@ -168,53 +174,75 @@ class ChessAI:
 
 
     '''Get best move function for 2*8 output'''
-    def get_best_move(self, board):
+    def get_best_move(self, gs):
+        board = chess_state_to_board(gs)
         legal_moves = list(board.legal_moves)
         if not legal_moves:
             return None
 
         input_matrix = self.board_to_input(board)
-        # print(f"Input matrix {input_matrix}")
         input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
-        start_predictions, end_predictions = self.model.predict(input_matrix)
-        # print(f"Start predictions {start_predictions}")
-        # print(f"End predictions {end_predictions}")
+        start_predictions, end_predictions = self.model.predict(input_matrix, verbose=0)
 
         start_predictions = start_predictions.reshape(64)
         end_predictions = end_predictions.reshape(64)
 
+
+        valid_moves = gs.getValidMoves()
         move_scores = []
-        for move in legal_moves:
-            start_square_score = start_predictions[move.from_square]
-            end_square_score = end_predictions[move.to_square]
+        for move in valid_moves:
+            cn_move = move.getChessNotation()
+            start_col = self.filesToCols[cn_move[0]]
+            start_row = self.ranksToRows[cn_move[1]]
+            end_col = self.filesToCols[cn_move[2]]
+            end_row = self.ranksToRows[cn_move[3]]
+            start_square_score = start_predictions[start_row * 8 + start_col]
+            end_square_score = end_predictions[end_row * 8 + end_col]
             move_score = start_square_score * end_square_score
             move_scores.append((move, move_score))
-            # print (f"Move: {move}, Score: {move_score}")
 
         move_scores.sort(key=lambda x: x[1], reverse=True)
 
         best_move = move_scores[0][0] if move_scores else None
+        best_move_cn = best_move.getChessNotation()
 
-        return best_move
+        return best_move_cn
 
-    def get_top_n_moves(self, board, n=5):
+    def get_top_n_moves(self, gs, n=5):
+        board = chess_state_to_board(gs)
         legal_moves = list(board.legal_moves)
         if not legal_moves:
-            return []
+            return None
 
         input_matrix = self.board_to_input(board)
         input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
-        start_predictions, end_predictions = self.model.predict(input_matrix)
+        start_predictions, end_predictions = self.model.predict(input_matrix, verbose=0)
 
         start_predictions = start_predictions.reshape(64)
         end_predictions = end_predictions.reshape(64)
 
+
+        valid_moves = gs.getValidMoves()
         move_scores = []
-        for move in legal_moves:
-            start_square_score = start_predictions[move.from_square]
-            end_square_score = end_predictions[move.to_square]
+        for move in valid_moves:
+            cn_move = move.getChessNotation()
+            start_col = self.filesToCols[cn_move[0]]
+            start_row = self.ranksToRows[cn_move[1]]
+            end_col = self.filesToCols[cn_move[2]]
+            end_row = self.ranksToRows[cn_move[3]]
+            # print(f"Start col: {start_col}, Start row: {start_row}, End col: {end_col}, End row: {end_row}")
+            start_square_score = start_predictions[start_row * 8 + start_col]
+            end_square_score = end_predictions[end_row * 8 + end_col]
             move_score = start_square_score * end_square_score
             move_scores.append((move, move_score))
+
+        # move_scores = []
+        # for move in legal_moves:
+        #     start_square_score = start_predictions[move.from_square]
+        #     end_square_score = end_predictions[move.to_square]
+        #     move_score = start_square_score * end_square_score
+        #     move_scores.append((move, move_score))
+        #     # print (f"Move: {move}, Score: {move_score}")
 
         move_scores.sort(key=lambda x: x[1], reverse=True)
 
@@ -224,9 +252,12 @@ class ChessAI:
         # Extract just the moves
         top_n_moves = [move[0] for move in top_n_moves]
 
-        print(f"Top {n} moves: {top_n_moves}")
+        top_n_moves_cn = []
+        for move in top_n_moves:
+            top_n_moves_cn.append(move.getChessNotation())
+        # print(f"Top {n} moves: {top_n_moves_cn}")
 
-        return top_n_moves
+        return top_n_moves_cn
 
 
     def save_model(self, MODEL_PATH):

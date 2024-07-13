@@ -114,7 +114,7 @@ class Metrics:
     def get_top_moves(self, gs, n):
         fen_position = board_to_fen(gs)
         self.stockfish.set_fen_position(fen_position)
-        print(f"Fen position: {fen_position}")
+        # print(f"Fen position: {fen_position}")
         try:
             top_moves = self.stockfish.get_top_moves(n)
         except:

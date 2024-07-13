@@ -133,13 +133,13 @@ def main():
 
         # AI move finder
         if not gameOver and not humanTurn:
-            board = chess_state_to_board(gs)
-            ai_move = ai.get_best_move(board)
-            print("Top AI move is: ", ai_move)
+            # board = chess_state_to_board(gs)
+            top_1_ai_move = ai.get_best_move(gs)
+            print("Top 1 AI move without tree search is: ", top_1_ai_move)
 
-            # tree = search_tree.build_tree(gs, base_move=last_human_move)
-            # ai_move = search_tree.get_best_direct_move(tree)
-            # print("Best move after tree search: ", ai_move)
+            search_tree.build_tree(gs, base_move=last_human_move)
+            ai_move = search_tree.get_best_move()
+            print("Best move after tree search: ", ai_move)
 
             # tree = search_tree.build_tree(gs)
             # ai_move = min(tree, key=lambda x: x['evaluation'])['move']  # Minimize evaluation
@@ -150,36 +150,46 @@ def main():
 
             print("Human move: ", gs.moveLog[-1].getChessNotation() if gs.moveLog else "None", "AI move: ", ai_move)
             if ai_move:
-                ai_move_made = False
-                for move in validMoves:
-                    if move.startRow == ai_move.from_square // 8 and move.startCol == ai_move.from_square % 8 and \
-                       move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
-                        print("AI making move")
-                        cn_move = move.getChessNotation()
-                        print("Chess notation AI move: ", cn_move)
-                        metrics.score_move(gs, cn_move, n_top_moves=n_top_moves)
-                        gs.makeMove(move)
-                        moveMade = True
-                        animate = True
-                        ai_move_made = True
-                        total_ai_moves += 1
-                        break
-                if not ai_move_made:
-                    # print("AI couldn't make a valid move. Choosing a random move.")
-                    import random
-                    if validMoves:
-                        random_move = random.choice(validMoves)
-                        cn_random_move = random_move.getChessNotation()
-                        print("Chess notation RANDOM MOVE REPLACED : ", cn_random_move)
-                        metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
-                        gs.makeMove(random_move)
-                        moveMade = True
-                        animate = True
-                        replaced_moves += 1
-                        total_ai_moves += 1
-                    else:
-                        print("No valid moves available. Game over.")
-                        gameOver = True
+                # ai_move_made = False
+                print("AI making move: ", ai_move)
+                # cn_move = ai_move.getChessNotation()
+                # print("Chess notation AI move: ", cn_move)
+                metrics.score_move(gs, ai_move, n_top_moves=n_top_moves)
+                move = ChessState.Move.fromChessNotation(ai_move, gs.board)
+                gs.makeMove(move)
+                moveMade = True
+                animate = True
+                # ai_move_made = True
+                total_ai_moves += 1
+                # for move in validMoves:
+                #     if move.startRow == ai_move.from_square // 8 and move.startCol == ai_move.from_square % 8 and \
+                #        move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
+                #         print("AI making move")
+                #         cn_move = move.getChessNotation()
+                #         print("Chess notation AI move: ", cn_move)
+                #         metrics.score_move(gs, cn_move, n_top_moves=n_top_moves)
+                #         gs.makeMove(move)
+                #         moveMade = True
+                #         animate = True
+                #         ai_move_made = True
+                #         total_ai_moves += 1
+                #         break
+                # if not ai_move_made:
+                #     # print("AI couldn't make a valid move. Choosing a random move.")
+                #     import random
+                #     if validMoves:
+                #         random_move = random.choice(validMoves)
+                #         cn_random_move = random_move.getChessNotation()
+                #         print("Chess notation RANDOM MOVE REPLACED : ", cn_random_move)
+                #         metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
+                #         gs.makeMove(random_move)
+                #         moveMade = True
+                #         animate = True
+                #         replaced_moves += 1
+                #         total_ai_moves += 1
+                #     else:
+                #         print("No valid moves available. Game over.")
+                #         gameOver = True
 
         if moveMade:
             if animate:

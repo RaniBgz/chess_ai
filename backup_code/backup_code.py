@@ -72,3 +72,16 @@
         #         print(f"ERROR: {e}")
         #         queue.put('error')
         #         queue.put(None)
+
+
+'''
+Old function to get best moves
+'''
+
+        # move_scores = []
+        # for move in legal_moves:
+        #     start_square_score = start_predictions[move.from_square]
+        #     end_square_score = end_predictions[move.to_square]
+        #     move_score = start_square_score * end_square_score
+        #     move_scores.append((move, move_score))
+        #     # print (f"Move: {move}, Score: {move_score}")
