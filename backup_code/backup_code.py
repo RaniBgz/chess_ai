@@ -167,3 +167,18 @@ Old AI move logic
         #
         #         self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
         #         gs.undoMove()
+
+        # def _build_tree_recursive(self, gs, current_node, current_depth):
+        #     if current_depth >= self.max_depth:
+        #         return
+        #
+        #     top_moves = self.ai.get_top_n_moves(gs, self.width)
+        #
+        #     for move in top_moves:
+        #         move_obj = Move.fromChessNotation(move, gs.board)
+        #         gs.makeMove(move_obj)
+        #         move_evaluation = self.evaluate_board(gs)
+        #         child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
+        #         current_node.add_child(child_node)
+        #         self._build_tree_recursive(gs, child_node, current_depth + 0.5)
+        #         gs.undoMove()

@@ -6,6 +6,7 @@ import chess
 pgn_path = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 
 
+#Converts the chess state to a board
 def chess_state_to_board(gs):
     fen = ""
     for row in gs.board:
@@ -25,26 +26,7 @@ def chess_state_to_board(gs):
     fen += " w KQkq - 0 1"  # Add default values for now
     return chess.Board(fen)
 
-
-def chess_state_to_board(gs):
-    fen = ""
-    for row in gs.board:
-        empty = 0
-        for piece in row:
-            if piece == "--":
-                empty += 1
-            else:
-                if empty > 0:
-                    fen += str(empty)
-                    empty = 0
-                fen += piece[1].lower() if piece[0] == 'b' else piece[1].upper()
-        if empty > 0:
-            fen += str(empty)
-        fen += "/"
-    fen = fen[:-1]  # remove last slash
-    fen += " w KQkq - 0 1"  # Add default values for now
-    return chess.Board(fen)
-
+#Converts the board to a FEN string
 def board_to_fen(gs):
     # Define the mappings for row to rank and column to file
     rowsToRanks = {7: '1', 6: '2', 5: '3', 4: '4', 3: '5', 2: '6', 1: '7', 0: '8'}
@@ -94,6 +76,7 @@ def board_to_fen(gs):
 
     return fen
 
+#Used to split a PGN file into chunks
 def split_pgn_file(pgn_file, games_per_chunk=500):
     output_dir = 'split_pgn_files'
     os.makedirs(output_dir, exist_ok=True)

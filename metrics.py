@@ -14,7 +14,7 @@ from collections import deque
 from utils import board_to_fen
 from datetime import datetime
 
-stockfish_path = f'./stockfish/stockfish-ubuntu-x86-64-avx2'
+stockfish_path = f'./stockfish_engine/stockfish-ubuntu-x86-64-avx2'
 metrics_path = './metrics'
 
 class Metrics:

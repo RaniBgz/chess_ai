@@ -204,7 +204,7 @@ class ChessAI:
             start_square_score = start_predictions[start_row * 8 + start_col]
             end_square_score = end_predictions[end_row * 8 + end_col]
             move_score = start_square_score * end_square_score
-            print(f"Move: {cn_move}, Score: {move_score}")
+            # print(f"Move: {cn_move}, Score: {move_score}")
             move_scores.append((move, move_score))
 
         move_scores.sort(key=lambda x: x[1], reverse=True)
