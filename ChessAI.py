@@ -172,14 +172,14 @@ class ChessAI:
 
             # Save model after every 10 chunks
             if chunks_processed_since_last_save >= 10:
-                save_path = os.path.join(self.model_folder, f'{self.base_model_name}_{chunk_index}_bs_{batch_size}{self.model_extension}')
+                save_path = os.path.join(model_folder, f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
                 self.save_model(save_path)
                 print(f"Model saved after processing {chunks_processed_since_last_save} chunks.")
                 chunks_processed_since_last_save = 0
 
         # Save the model one last time if there are remaining unsaved chunks
         if chunks_processed_since_last_save > 0:
-            save_path = os.path.join(self.model_folder, f'{self.base_model_name}_{chunk_index}_bs_{batch_size}{self.model_extension}')
+            save_path = os.path.join(model_folder, f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
             self.save_model(save_path)
             print(f"Model saved after processing the remaining {chunks_processed_since_last_save} chunks.")
 

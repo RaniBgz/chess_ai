@@ -1,2 +1,2 @@
-model_path: ./cnn_models_v7/cnn_v7_6_bs_8.h5
+model_path: ./cnn_models_v7/cnn_v7_99_bs_8.h5
 use_checkpoint: false

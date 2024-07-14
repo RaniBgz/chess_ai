@@ -23,7 +23,7 @@ PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
 
-TREE_WIDTH = 6
+TREE_WIDTH = 8
 TREE_DEPTH = 6
 MIN_PRUNING_DEPTH = 3
 
@@ -135,12 +135,12 @@ def main():
         # AI move finder
         if not gameOver and not humanTurn:
             # board = chess_state_to_board(gs)
-            top_1_ai_move = ai.get_best_move(gs)
-            print("Top 1 AI move without tree search is: ", top_1_ai_move)
+            ai_move = ai.get_best_move(gs)
+            print("Top 1 AI move without tree search is: ", ai_move)
 
-            search_tree.build_tree(gs, base_move=last_human_move)
-            ai_move = search_tree.get_best_move()
-            print("Best move after tree search: ", ai_move)
+            # search_tree.build_tree(gs, base_move=last_human_move)
+            # ai_move = search_tree.get_best_move()
+            # print("Best move after tree search: ", ai_move)
 
             # tree = search_tree.build_tree(gs)
             # ai_move = min(tree, key=lambda x: x['evaluation'])['move']  # Minimize evaluation

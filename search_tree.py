@@ -66,7 +66,7 @@ class SearchTree:
         board = chess_state_to_board(gs)
 
         self.root = Node(move=base_move, evaluation=base_evaluation, depth=0.0, parent=None)
-        self._build_tree_recursive(gs, self.root, 0, float('-inf'), float('inf'), False)
+        self._build_tree_recursive(gs, self.root, 0, float('-inf'), float('inf'), True)
 
 
     # def _build_tree_recursive(self, gs, current_node, current_depth):
