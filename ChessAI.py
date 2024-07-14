@@ -13,8 +13,8 @@ from utils import chess_state_to_board
 num_chunks = 1000
 batch_size = 64
 
-model_folder = './cnn_models_v7'
-base_model_name = 'cnn_v7'
+model_folder = './cnn_models_v8'
+base_model_name = 'cnn_v8'
 model_extension = '.h5'
 pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
@@ -73,9 +73,10 @@ class ChessAI:
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
 
-        x = keras.layers.Flatten()(x)
+        x = keras.layers.GlobalAvgPool2D()(x)
 
-        dense1 = keras.layers.Dense(1024)(x)
+        dense1 = keras.layers.Dense(512)(x)
+        dense1 = keras.layers.Dropout(0.3)(dense1)
         dense1 = keras.layers.BatchNormalization()(dense1)
         dense1 = keras.layers.Activation('relu')(dense1)
 
@@ -183,72 +184,6 @@ class ChessAI:
             self.save_model(save_path)
             print(f"Model saved after processing the remaining {chunks_processed_since_last_save} chunks.")
 
-    # def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
-    #     chunks_dir = 'split_pgn_files'
-    #     chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
-    #
-    #     for chunk_index, chunk_file in enumerate(chunk_files):
-    #         if chunk_index < self.num_chunks_seen:
-    #             continue  # Skip chunks that have already been seen
-    #
-    #         if not os.path.exists(chunk_file):
-    #             print(f"Chunk file {chunk_file} does not exist.")
-    #             continue
-    #
-    #         print(f"Training on chunk {chunk_index + 1}/{num_chunks}")
-    #         inputs, targets_start, targets_end = [], [], []
-    #         with open(chunk_file) as f:
-    #             game_number = 0
-    #             while True:
-    #                 game = chess.pgn.read_game(f)
-    #                 # print("Game: ", game)
-    #                 if game is None:
-    #                     break
-    #                 board = game.board()
-    #                 # print("Board: ", board)
-    #                 for move in game.mainline_moves():
-    #                     # print("Move is ", move)
-    #                     input_matrix = self.board_to_input(board)
-    #                     # print("Input matrix is ", input_matrix)
-    #
-    #                     # Create target matrices
-    #                     start_square = np.zeros((8, 8))
-    #                     end_square = np.zeros((8, 8))
-    #
-    #                     # Set the start and end positions
-    #                     start_row, start_col = move.from_square // 8, move.from_square % 8
-    #                     # print("Start row and col: ", start_row, start_col)
-    #                     end_row, end_col = move.to_square // 8, move.to_square % 8
-    #                     # print("End row and col: ", end_row, end_col)
-    #                     start_square[start_row, start_col] = 1
-    #                     end_square[end_row, end_col] = 1
-    #
-    #                     # print("Start square is ", start_square)
-    #                     # print("End square is ", end_square)
-    #
-    #                     inputs.append(input_matrix)
-    #                     targets_start.append(start_square)
-    #                     targets_end.append(end_square)
-    #
-    #                     # Train in batches
-    #                     if len(inputs) >= batch_size:
-    #                         self.model.fit(np.array(inputs), [np.array(targets_start), np.array(targets_end)], verbose=0)
-    #                         inputs, targets_start, targets_end = [], [], []
-    #
-    #                     board.push(move)
-    #
-    #                 # Train remaining samples if any
-    #                 if inputs:
-    #                     self.model.fit(np.array(inputs), [np.array(targets_start), np.array(targets_end)], verbose=0)
-    #                     inputs, targets_start, targets_end = [], [], []
-    #
-    #                 game_number += 1
-    #                 print(f"Trained on game {game_number} in chunk {chunk_index}")
-    #         print("Training done on chunk ", chunk_index)
-    #         save_path = os.path.join(model_folder,f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
-    #         self.save_model(save_path)
-
-
     '''Get best move function for 2*8 output'''
     def get_best_move(self, gs):
         board = chess_state_to_board(gs)
@@ -276,6 +211,7 @@ class ChessAI:
             start_square_score = start_predictions[start_row * 8 + start_col]
             end_square_score = end_predictions[end_row * 8 + end_col]
             move_score = start_square_score * end_square_score
+            print(f"Move: {cn_move}, Score: {move_score}")
             move_scores.append((move, move_score))
 
         move_scores.sort(key=lambda x: x[1], reverse=True)

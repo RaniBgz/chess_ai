@@ -44,73 +44,29 @@ class SearchTree:
         self.min_pruning_depth = min_pruning_depth
         # Initialize root node
 
-
-    #Normalize things: always use the same move notation = chess notation, to string.
-    # def build_tree(self, gs, base_move=None):
-    #     print("In build tree")
-    #     current_depth = 0
-    #     base_evaluation = self.evaluate_board(gs) #Evaluate current board position, before the AI plays
-    #
-    #     self.root = Node(move=base_move,
-    #                      evaluation=base_evaluation,
-    #                      depth=0.0,
-    #                      parent=None)
-    #     self._build_tree_recursive(gs, self.root, 0)
-    #     # for child in self.root.children:
-    #     #     print(f"Child: {child}")
-
     def build_tree(self, gs, base_move=None):
         current_depth = 0
         base_evaluation = self.evaluate_board(gs)
 
-        board = chess_state_to_board(gs)
 
         self.root = Node(move=base_move, evaluation=base_evaluation, depth=0.0, parent=None)
-        self._build_tree_recursive(gs, self.root, 0, float('-inf'), float('inf'), True)
+        self._build_tree_recursive(gs, self.root, current_depth, float('-inf'), float('inf'), True)
 
 
-    # def _build_tree_recursive(self, gs, current_node, current_depth):
-    #     if current_depth >= self.max_depth:
-    #         return
-    #
-    #     top_moves = self.ai.get_top_n_moves(gs, self.width)
-    #
-    #     for move in top_moves:
-    #         move_obj = Move.fromChessNotation(move, gs.board)
-    #         gs.makeMove(move_obj)
-    #         move_evaluation = self.evaluate_board(gs)
-    #         child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
-    #         current_node.add_child(child_node)
-    #         self._build_tree_recursive(gs, child_node, current_depth + 0.5)
-    #         gs.undoMove()
+    def _build_tree_recursive(self, gs, current_node, current_depth):
+        if current_depth >= self.max_depth:
+            return
 
-    # def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
-    #     if current_depth >= self.max_depth:
-    #         return
-    #
-    #     top_moves = self.ai.get_top_n_moves(gs, self.width)
-    #
-    #     for move in top_moves:
-    #         move_obj = Move.fromChessNotation(move, gs.board)
-    #         gs.makeMove(move_obj)
-    #         move_evaluation = self.evaluate_board(gs)
-    #         child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
-    #         current_node.add_child(child_node)
-    #
-    #         if current_depth >= self.min_pruning_depth:
-    #             if maximizing_player:
-    #                 alpha = max(alpha, move_evaluation)
-    #                 if alpha >= beta:
-    #                     gs.undoMove()
-    #                     break
-    #             else:
-    #                 beta = min(beta, move_evaluation)
-    #                 if beta <= alpha:
-    #                     gs.undoMove()
-    #                     break
-    #
-    #         self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
-    #         gs.undoMove()
+        top_moves = self.ai.get_top_n_moves(gs, self.width)
+
+        for move in top_moves:
+            move_obj = Move.fromChessNotation(move, gs.board)
+            gs.makeMove(move_obj)
+            move_evaluation = self.evaluate_board(gs)
+            child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
+            current_node.add_child(child_node)
+            self._build_tree_recursive(gs, child_node, current_depth + 0.5)
+            gs.undoMove()
 
     def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
         if current_depth >= self.max_depth:
@@ -122,24 +78,20 @@ class SearchTree:
             move_obj = Move.fromChessNotation(move, gs.board)
             gs.makeMove(move_obj)
             move_evaluation = self.evaluate_board(gs)
-            print("Move evaluation: ", move_evaluation)
-            print("Alpha: ", alpha)
-            print("Beta: ", beta)
             child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
             current_node.add_child(child_node)
 
-            if maximizing_player:
-                alpha = max(alpha, move_evaluation)
-                if alpha >= beta:
-                    gs.undoMove()
-                    print("Pruning in maximizing player")
-                    break
-            else:
-                beta = min(beta, move_evaluation)
-                if beta <= alpha:
-                    gs.undoMove()
-                    print("Pruning in minimizing player")
-                    break
+            if current_depth >= self.min_pruning_depth:
+                if maximizing_player:
+                    alpha = max(alpha, move_evaluation)
+                    if alpha >= beta:
+                        gs.undoMove()
+                        break
+                else:
+                    beta = min(beta, move_evaluation)
+                    if beta <= alpha:
+                        gs.undoMove()
+                        break
 
             self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
             gs.undoMove()

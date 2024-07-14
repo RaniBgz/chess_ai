@@ -85,3 +85,85 @@ Old function to get best moves
         #     move_score = start_square_score * end_square_score
         #     move_scores.append((move, move_score))
         #     # print (f"Move: {move}, Score: {move_score}")
+
+'''
+Old AI move logic
+'''
+
+        # for move in validMoves:
+        #     if move.startRow == ai_move.from_square // 8 and move.startCol == ai_move.from_square % 8 and \
+        #        move.endRow == ai_move.to_square // 8 and move.endCol == ai_move.to_square % 8:
+        #         print("AI making move")
+        #         cn_move = move.getChessNotation()
+        #         print("Chess notation AI move: ", cn_move)
+        #         metrics.score_move(gs, cn_move, n_top_moves=n_top_moves)
+        #         gs.makeMove(move)
+        #         moveMade = True
+        #         animate = True
+        #         ai_move_made = True
+        #         total_ai_moves += 1
+        #         break
+        # if not ai_move_made:
+        #     # print("AI couldn't make a valid move. Choosing a random move.")
+        #     import random
+        #     if validMoves:
+        #         random_move = random.choice(validMoves)
+        #         cn_random_move = random_move.getChessNotation()
+        #         print("Chess notation RANDOM MOVE REPLACED : ", cn_random_move)
+        #         metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
+        #         gs.makeMove(random_move)
+        #         moveMade = True
+        #         animate = True
+        #         replaced_moves += 1
+        #         total_ai_moves += 1
+        #     else:
+        #         print("No valid moves available. Game over.")
+        #         gameOver = True
+
+
+        # Normalize things: always use the same move notation = chess notation, to string.
+        # def build_tree(self, gs, base_move=None):
+        #     print("In build tree")
+        #     current_depth = 0
+        #     base_evaluation = self.evaluate_board(gs) #Evaluate current board position, before the AI plays
+        #
+        #     self.root = Node(move=base_move,
+        #                      evaluation=base_evaluation,
+        #                      depth=0.0,
+        #                      parent=None)
+        #     self._build_tree_recursive(gs, self.root, 0)
+        #     # for child in self.root.children:
+        #     #     print(f"Child: {child}")
+
+
+        # def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
+        #     if current_depth >= self.max_depth:
+        #         return
+        #
+        #     top_moves = self.ai.get_top_n_moves(gs, self.width)
+        #
+        #     for move in top_moves:
+        #         move_obj = Move.fromChessNotation(move, gs.board)
+        #         gs.makeMove(move_obj)
+        #         move_evaluation = self.evaluate_board(gs)
+        #         print("Move evaluation: ", move_evaluation)
+        #         print("Alpha: ", alpha)
+        #         print("Beta: ", beta)
+        #         child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
+        #         current_node.add_child(child_node)
+        #
+        #         if maximizing_player:
+        #             alpha = max(alpha, move_evaluation)
+        #             if alpha >= beta:
+        #                 gs.undoMove()
+        #                 print("Pruning in maximizing player")
+        #                 break
+        #         else:
+        #             beta = min(beta, move_evaluation)
+        #             if beta <= alpha:
+        #                 gs.undoMove()
+        #                 print("Pruning in minimizing player")
+        #                 break
+        #
+        #         self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
+        #         gs.undoMove()
