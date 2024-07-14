@@ -12,12 +12,14 @@ from utils import chess_state_to_board
 
 num_chunks = 1000
 batch_size = 8
+chunks_to_save = 2
 
 model_folder = './cnn_models_v9'
 base_model_name = 'cnn_v9'
 model_extension = '.h5'
 pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
+
 
 class ChessAI:
     # maps ranks (chess row labels) to row indices
@@ -104,7 +106,7 @@ class ChessAI:
 
         return input_matrix
 
-    def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
+    def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10, chunks_to_save=10):
         chunks_dir = 'split_pgn_files'
         chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
         chunks_processed_since_last_save = 0
@@ -162,8 +164,8 @@ class ChessAI:
             chunks_processed_since_last_save += 1
             self.num_chunks_seen += 1
 
-            # Save model after every 10 chunks
-            if chunks_processed_since_last_save >= 10:
+            # Save model after every n chunks
+            if chunks_processed_since_last_save >= chunks_to_save:
                 save_path = os.path.join(model_folder, f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
                 self.save_model(save_path)
                 print(f"Model saved after processing {chunks_processed_since_last_save} chunks.")
@@ -286,7 +288,7 @@ if __name__ == "__main__":
 
     print("Training on PGN data chunks...")
     start_time = time.time()
-    ai.train_on_pgn_chunks_batch(num_chunks=num_chunks, batch_size=batch_size)  # Train the AI on PGN data chunks
+    ai.train_on_pgn_chunks_batch(num_chunks=num_chunks, batch_size=batch_size, chunks_to_save=chunks_to_save)  # Train the AI on PGN data chunks
 
     # ai.save_model(model_path)
     end_time = time.time()
