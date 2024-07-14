@@ -76,7 +76,7 @@ class Metrics:
         move_index = -1
         move_accuracy = 0.0
         for i in range(0, len(top_moves)):
-            print(f"Top move {i}: {top_moves[i]['Move']}")
+            # print(f"Top move {i}: {top_moves[i]['Move']}")
             if top_moves[i]['Move'] == move:
                 move_index = i
                 break

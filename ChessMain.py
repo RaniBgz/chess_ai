@@ -24,8 +24,8 @@ PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
 
-TREE_WIDTH = 3
-TREE_DEPTH = 3
+TREE_WIDTH = 4
+TREE_DEPTH = 2
 MIN_PRUNING_DEPTH = 2
 
 # Load configuration
@@ -136,9 +136,15 @@ def main():
         # AI move finder
         if not gameOver and not humanTurn:
             ai_move = ai_move_without_tree_search(ai, gs)
-            # ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
+            print("Last human move: ", last_human_move)
+            ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
             validMoves = gs.getValidMoves()
-            print("Valid moves at AI turn ", validMoves)
+            cn_valid_moves = [move.getChessNotation() for move in validMoves]
+            print("AI's best move: ", ai_move)
+            board = chess_state_to_board(gs)
+            print("Board at AI turn: ", board)
+            print("Valid moves at AI turn ", cn_valid_moves)
+            # print("Board at AI turn: ", gs.board)
 
             print("Human move: ", gs.moveLog[-1].getChessNotation() if gs.moveLog else "None", "AI move: ", ai_move)
             if ai_move:

@@ -81,17 +81,17 @@ class SearchTree:
             child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
             current_node.add_child(child_node)
 
-            if current_depth >= self.min_pruning_depth:
-                if maximizing_player:
-                    alpha = max(alpha, move_evaluation)
-                    if alpha >= beta:
-                        gs.undoMove()
-                        break
-                else:
-                    beta = min(beta, move_evaluation)
-                    if beta <= alpha:
-                        gs.undoMove()
-                        break
+            # if current_depth >= self.min_pruning_depth:
+            #     if maximizing_player:
+            #         alpha = max(alpha, move_evaluation)
+            #         if alpha >= beta:
+            #             gs.undoMove()
+            #             break
+            #     else:
+            #         beta = min(beta, move_evaluation)
+            #         if beta <= alpha:
+            #             gs.undoMove()
+            #             break
 
             self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
             gs.undoMove()
