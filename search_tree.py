@@ -10,6 +10,9 @@ from utils import chess_state_to_board
 from Chess.ChessState import Move
 import random
 
+#TODO: Check ending conditions for the tree (does it come from pygame, or from the AI?)
+#TODO: Make search more efficient (alpha-beta pruning, etc.)
+
 class Node:
     def __init__(self, move, evaluation, depth, parent=None):
         self.move = move
@@ -33,52 +36,113 @@ class SearchTree:
     rook_value = 5
     queen_value = 9
 
-    def __init__(self, ai, width=2, depth=2):
+    def __init__(self, ai, width=2, depth=2, min_pruning_depth=1):
         self.ai = ai
         self.width = width
         self.max_depth = depth
         self.root = None
+        self.min_pruning_depth = min_pruning_depth
         # Initialize root node
 
 
     #Normalize things: always use the same move notation = chess notation, to string.
+    # def build_tree(self, gs, base_move=None):
+    #     print("In build tree")
+    #     current_depth = 0
+    #     base_evaluation = self.evaluate_board(gs) #Evaluate current board position, before the AI plays
+    #
+    #     self.root = Node(move=base_move,
+    #                      evaluation=base_evaluation,
+    #                      depth=0.0,
+    #                      parent=None)
+    #     self._build_tree_recursive(gs, self.root, 0)
+    #     # for child in self.root.children:
+    #     #     print(f"Child: {child}")
+
     def build_tree(self, gs, base_move=None):
-        print("In build tree")
         current_depth = 0
-        base_evaluation = self.evaluate_board(gs) #Evaluate current board position, before the AI plays
+        base_evaluation = self.evaluate_board(gs)
 
-        board = chess_state_to_board(gs) #Convert
+        board = chess_state_to_board(gs)
 
-        self.root = Node(move=base_move,
-                         evaluation=base_evaluation,
-                         depth=0.0,
-                         parent=None)
-        # print("Root node: ", self.root)
-        # self.root.__repr__()
-        # top_moves = self.ai.get_top_n_moves(gs, self.width) #Get top n moves from AI
-
-        self._build_tree_recursive(gs, self.root, 0)
-
-        # for child in self.root.children:
-        #     print(f"Child: {child}")
+        self.root = Node(move=base_move, evaluation=base_evaluation, depth=0.0, parent=None)
+        self._build_tree_recursive(gs, self.root, 0, float('-inf'), float('inf'), False)
 
 
-    def _build_tree_recursive(self, gs, current_node, current_depth):
+    # def _build_tree_recursive(self, gs, current_node, current_depth):
+    #     if current_depth >= self.max_depth:
+    #         return
+    #
+    #     top_moves = self.ai.get_top_n_moves(gs, self.width)
+    #
+    #     for move in top_moves:
+    #         move_obj = Move.fromChessNotation(move, gs.board)
+    #         gs.makeMove(move_obj)
+    #         move_evaluation = self.evaluate_board(gs)
+    #         child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
+    #         current_node.add_child(child_node)
+    #         self._build_tree_recursive(gs, child_node, current_depth + 0.5)
+    #         gs.undoMove()
+
+    # def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
+    #     if current_depth >= self.max_depth:
+    #         return
+    #
+    #     top_moves = self.ai.get_top_n_moves(gs, self.width)
+    #
+    #     for move in top_moves:
+    #         move_obj = Move.fromChessNotation(move, gs.board)
+    #         gs.makeMove(move_obj)
+    #         move_evaluation = self.evaluate_board(gs)
+    #         child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
+    #         current_node.add_child(child_node)
+    #
+    #         if current_depth >= self.min_pruning_depth:
+    #             if maximizing_player:
+    #                 alpha = max(alpha, move_evaluation)
+    #                 if alpha >= beta:
+    #                     gs.undoMove()
+    #                     break
+    #             else:
+    #                 beta = min(beta, move_evaluation)
+    #                 if beta <= alpha:
+    #                     gs.undoMove()
+    #                     break
+    #
+    #         self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
+    #         gs.undoMove()
+
+    def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
         if current_depth >= self.max_depth:
             return
 
         top_moves = self.ai.get_top_n_moves(gs, self.width)
-        # checked_moves = [self.check_move_validity(gs, move) for move in top_moves]
 
         for move in top_moves:
             move_obj = Move.fromChessNotation(move, gs.board)
             gs.makeMove(move_obj)
             move_evaluation = self.evaluate_board(gs)
+            print("Move evaluation: ", move_evaluation)
+            print("Alpha: ", alpha)
+            print("Beta: ", beta)
             child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
             current_node.add_child(child_node)
-            self._build_tree_recursive(gs, child_node, current_depth + 0.5)
-            gs.undoMove()
 
+            if maximizing_player:
+                alpha = max(alpha, move_evaluation)
+                if alpha >= beta:
+                    gs.undoMove()
+                    print("Pruning in maximizing player")
+                    break
+            else:
+                beta = min(beta, move_evaluation)
+                if beta <= alpha:
+                    gs.undoMove()
+                    print("Pruning in minimizing player")
+                    break
+
+            self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
+            gs.undoMove()
 
     def evaluate_board(self, gs):
         piece_values = {'bp': 1, 'wp': 1, 'bR': 5, 'wR': 5, 'bN': 3, 'wN': 3, 'bB': 3, 'wB':3, 'wQ':9, 'bQ': 9, 'bK': 0, 'wK': 0}
@@ -129,121 +193,3 @@ class SearchTree:
         for child in node.children:
             leaf_nodes.extend(self._collect_leaf_nodes(child))
         return leaf_nodes
-
-
-
-    # def evaluate_all_moves(self, gs, nodes):
-    #     #Iterate through all the depths until the final depth
-    #     for i in range(1, 2*self.depth+1):
-    #         current_depth = i/2.0
-    #         print(current_depth)
-    #         for node in nodes:
-    #             move_obj = Move.fromChessNotation(str(node.move), gs.board)
-    #             gs.makeMove(move_obj)
-    #             self.evaluate_moves_at_depth_for_one_parent(gs, current_depth, node, current_depth)
-
-
-    # def evaluate_moves_at_depth_for_one_parent(self, gs, current_depth, moves, parent_node=None):
-    #     #Going throuhg checked top moves, evaluating the board after the move, and creating a node for each move
-    #     nodes = []
-    #     for move in moves:
-    #         move_obj = Move.fromChessNotation(move, gs.board)
-    #         gs.makeMove(move_obj)
-    #         move_evaluation = self.evaluate_board(gs)
-    #         node = Node(move=move, evaluation=move_evaluation, depth=current_depth, parent=parent_node)
-    #         parent_node.add_child(node)
-    #         print(f"Created node: {node}")
-    #         nodes.append(node)
-    #         gs.undoMove()
-    #     return nodes
-
-
-    # def get_best_direct_move(self, tree):
-    #     best_evaluation = 10000
-    #     best_move = None
-    #
-    #     def traverse(node):
-    #         nonlocal best_evaluation, best_move
-    #         if 'sub_tree' in node:
-    #             for child in node['sub_tree']:
-    #                 traverse(child)
-    #         else:
-    #             if node['evaluation'] < best_evaluation:
-    #                 best_evaluation = node['evaluation']
-    #                 best_move = node['parent_move']
-    #                 print(f"Best move: {best_move} with evaluation {best_evaluation}")
-    #
-    #     for node in tree:
-    #         traverse(node)
-    #
-    #     return best_move
-
-
-
-    # def simulate_opponent_response(self, gs, n):
-    #     print("Simulating opponent responses")
-    #     board = chess_state_to_board(gs)
-    #     top_moves = self.ai.get_top_n_moves(board, n)
-    #     checked_top_moves = []
-    #     for move in top_moves:
-    #         checked_top_moves.append(self.check_move_validity(gs, move))
-    #     print("Top moves for opponent are:", top_moves)
-    #     opponent_evaluations = []
-    #
-    #     for move in checked_top_moves:
-    #         print("Move in checked moves: ", move)
-    #         move_obj = Move.fromChessNotation(str(move), gs.board)
-    #         gs.makeMove(move_obj)
-    #         evaluation = self.evaluate_board(gs)
-    #         print(f"Evaluation of board after opponent's move {move}: {evaluation}")
-    #         # opponent_evaluations.append((move, evaluation))
-    #         opponent_evaluations.append((move_obj, evaluation))
-    #         gs.undoMove()
-    #
-    #     return opponent_evaluations
-
-
-    # def check_move_validity(self, gs, input_move):
-    #     validMoves = gs.getValidMoves()
-    #     cn_validMoves = []
-    #     for move in validMoves:
-    #         cn_validMoves.append(move.getChessNotation())
-    #     for cn_move in cn_validMoves:
-    #         if str(cn_move) == str(input_move):
-    #             print("AI move is valid")
-    #             return str(input_move)
-    #     print("AI move is invalid")
-    #     if cn_validMoves:
-    #         random_move = random.choice(cn_validMoves)
-    #         return str(random_move)
-    #     else:
-    #         print("No valid moves available. Game over.")
-    #         return None
-
-
-        # checked_top_moves = []
-        # #Check if moves are valid, replace invalid moves by random moves
-        # for move in top_moves:
-        #     checked_top_moves.append(self.check_move_validity(gs, move))
-        # print("Checked top moves: ", checked_top_moves)
-
-        #First step, evaluate the board after the AI's move at depth = 0.5
-        # base_nodes = self.evaluate_moves_at_depth_for_one_parent(gs, current_depth, top_moves,
-        #                                                         parent_node=self.root)
-
-        # #First step, evaluate the board after the AI's move at depth = 0.5
-        # nodes = self.evaluate_moves_at_depth_for_one_parent(gs, current_depth, checked_top_moves, parent_node=self.root)
-        #
-        # #Second step: for each node, evaluate the board after the opponent's move at depth = 1
-        # for node in nodes:
-        #     #Before calling the function again, we need to replay all the moves to be in the same state as before
-        #     move_obj = Move.fromChessNotation(str(node.move), gs.board)
-        #     gs.makeMove(move_obj)
-        #     board = chess_state_to_board(gs)
-        #     top_moves2 = self.ai.get_top_n_moves(gs, self.width)
-        #     checked_top_moves = []
-        #     # Check if moves are valid, replace invalid moves by random moves
-        #     for move in top_moves2:
-        #         checked_top_moves.append(self.check_move_validity(gs, move))
-        #     print("Checked top moves: ", checked_top_moves)
-        #     nodes2 = self.evaluate_moves_at_depth_for_one_parent(gs, current_depth+0.5, checked_top_moves, parent_node=node)

@@ -10,8 +10,8 @@ from utils import chess_state_to_board
 
 #TODO: make training fault-resilient
 
-num_chunks = 100
-batch_size = 8
+num_chunks = 1000
+batch_size = 64
 
 model_folder = './cnn_models_v7'
 base_model_name = 'cnn_v7'
@@ -115,6 +115,7 @@ class ChessAI:
     def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
         chunks_dir = 'split_pgn_files'
         chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
+        chunks_processed_since_last_save = 0
 
         for chunk_index, chunk_file in enumerate(chunk_files):
             if chunk_index < self.num_chunks_seen:
@@ -130,15 +131,11 @@ class ChessAI:
                 game_number = 0
                 while True:
                     game = chess.pgn.read_game(f)
-                    # print("Game: ", game)
                     if game is None:
                         break
                     board = game.board()
-                    # print("Board: ", board)
                     for move in game.mainline_moves():
-                        # print("Move is ", move)
                         input_matrix = self.board_to_input(board)
-                        # print("Input matrix is ", input_matrix)
 
                         # Create target matrices
                         start_square = np.zeros((8, 8))
@@ -146,14 +143,9 @@ class ChessAI:
 
                         # Set the start and end positions
                         start_row, start_col = move.from_square // 8, move.from_square % 8
-                        # print("Start row and col: ", start_row, start_col)
                         end_row, end_col = move.to_square // 8, move.to_square % 8
-                        # print("End row and col: ", end_row, end_col)
                         start_square[start_row, start_col] = 1
                         end_square[end_row, end_col] = 1
-
-                        # print("Start square is ", start_square)
-                        # print("End square is ", end_square)
 
                         inputs.append(input_matrix)
                         targets_start.append(start_square)
@@ -174,8 +166,87 @@ class ChessAI:
                     game_number += 1
                     print(f"Trained on game {game_number} in chunk {chunk_index}")
             print("Training done on chunk ", chunk_index)
-            save_path = os.path.join(model_folder,f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
+
+            chunks_processed_since_last_save += 1
+            self.num_chunks_seen += 1
+
+            # Save model after every 10 chunks
+            if chunks_processed_since_last_save >= 10:
+                save_path = os.path.join(self.model_folder, f'{self.base_model_name}_{chunk_index}_bs_{batch_size}{self.model_extension}')
+                self.save_model(save_path)
+                print(f"Model saved after processing {chunks_processed_since_last_save} chunks.")
+                chunks_processed_since_last_save = 0
+
+        # Save the model one last time if there are remaining unsaved chunks
+        if chunks_processed_since_last_save > 0:
+            save_path = os.path.join(self.model_folder, f'{self.base_model_name}_{chunk_index}_bs_{batch_size}{self.model_extension}')
             self.save_model(save_path)
+            print(f"Model saved after processing the remaining {chunks_processed_since_last_save} chunks.")
+
+    # def train_on_pgn_chunks_batch(self, num_chunks, batch_size=10):
+    #     chunks_dir = 'split_pgn_files'
+    #     chunk_files = [os.path.join(chunks_dir, f"chunk_{i}.pgn") for i in range(num_chunks)]
+    #
+    #     for chunk_index, chunk_file in enumerate(chunk_files):
+    #         if chunk_index < self.num_chunks_seen:
+    #             continue  # Skip chunks that have already been seen
+    #
+    #         if not os.path.exists(chunk_file):
+    #             print(f"Chunk file {chunk_file} does not exist.")
+    #             continue
+    #
+    #         print(f"Training on chunk {chunk_index + 1}/{num_chunks}")
+    #         inputs, targets_start, targets_end = [], [], []
+    #         with open(chunk_file) as f:
+    #             game_number = 0
+    #             while True:
+    #                 game = chess.pgn.read_game(f)
+    #                 # print("Game: ", game)
+    #                 if game is None:
+    #                     break
+    #                 board = game.board()
+    #                 # print("Board: ", board)
+    #                 for move in game.mainline_moves():
+    #                     # print("Move is ", move)
+    #                     input_matrix = self.board_to_input(board)
+    #                     # print("Input matrix is ", input_matrix)
+    #
+    #                     # Create target matrices
+    #                     start_square = np.zeros((8, 8))
+    #                     end_square = np.zeros((8, 8))
+    #
+    #                     # Set the start and end positions
+    #                     start_row, start_col = move.from_square // 8, move.from_square % 8
+    #                     # print("Start row and col: ", start_row, start_col)
+    #                     end_row, end_col = move.to_square // 8, move.to_square % 8
+    #                     # print("End row and col: ", end_row, end_col)
+    #                     start_square[start_row, start_col] = 1
+    #                     end_square[end_row, end_col] = 1
+    #
+    #                     # print("Start square is ", start_square)
+    #                     # print("End square is ", end_square)
+    #
+    #                     inputs.append(input_matrix)
+    #                     targets_start.append(start_square)
+    #                     targets_end.append(end_square)
+    #
+    #                     # Train in batches
+    #                     if len(inputs) >= batch_size:
+    #                         self.model.fit(np.array(inputs), [np.array(targets_start), np.array(targets_end)], verbose=0)
+    #                         inputs, targets_start, targets_end = [], [], []
+    #
+    #                     board.push(move)
+    #
+    #                 # Train remaining samples if any
+    #                 if inputs:
+    #                     self.model.fit(np.array(inputs), [np.array(targets_start), np.array(targets_end)], verbose=0)
+    #                     inputs, targets_start, targets_end = [], [], []
+    #
+    #                 game_number += 1
+    #                 print(f"Trained on game {game_number} in chunk {chunk_index}")
+    #         print("Training done on chunk ", chunk_index)
+    #         save_path = os.path.join(model_folder,f'{base_model_name}_{chunk_index}_bs_{batch_size}{model_extension}')
+    #         self.save_model(save_path)
 
 
     '''Get best move function for 2*8 output'''

@@ -23,8 +23,9 @@ PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
 
-TREE_WIDTH = 2
-TREE_DEPTH = 2
+TREE_WIDTH = 6
+TREE_DEPTH = 6
+MIN_PRUNING_DEPTH = 3
 
 # Load configuration
 def load_config():
