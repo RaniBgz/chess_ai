@@ -63,16 +63,6 @@ class ChessAI:
         x = keras.layers.BatchNormalization()(x)
         x = keras.layers.Activation('relu')(x)
 
-        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.Activation('relu')(x)
-        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.Activation('relu')(x)
-        x = keras.layers.Conv2D(128, (3, 3), padding='same')(x)
-        x = keras.layers.BatchNormalization()(x)
-        x = keras.layers.Activation('relu')(x)
-
         x = keras.layers.Flatten()(x)
         # x = keras.layers.GlobalAvgPool2D()(x)
 
