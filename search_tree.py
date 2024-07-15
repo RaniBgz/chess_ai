@@ -59,20 +59,25 @@ class SearchTree:
 
 
     def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
-        print(f"Game state at depth {current_depth}")
-        gs.print_board()
+        # print(f"Game state at depth {current_depth}")
+        # gs.print_board()
         if current_depth >= self.max_depth:
+            #Exploring further moves can lead to checkmate positions, need to revert the boolean after tree building
+            if gs.checkMate:
+                gs.checkMate = False
+            if gs.staleMate:
+                gs.staleMate = False
             return
 
         top_moves = self.ai.get_top_n_moves(gs, self.width)
 
         for move in top_moves:
             move_obj = Move.fromChessNotation(move, gs.board)
-            print("Making move: ", move)
+            # print("Making move: ", move)
             gs.makeMove(move_obj)
             move_evaluation = self.evaluate_board(gs)
-            print("Board right after evaluation: ")
-            gs.print_board()
+            # print("Board right after evaluation: ")
+            # gs.print_board()
             child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
             current_node.add_child(child_node)
 
@@ -91,7 +96,7 @@ class SearchTree:
             #             break
 
             self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
-            print("Unmaking move:", move)
+            # print("Unmaking move:", move)
             gs.undoMove()
 
     def evaluate_board(self, gs):
