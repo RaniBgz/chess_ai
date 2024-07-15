@@ -35,6 +35,10 @@ class SearchTree:
     bishop_value = 3
     rook_value = 5
     queen_value = 9
+    king_value = 0
+    pieces_values = {'bp': pawn_value, 'wp': pawn_value, 'bN': knight_value, 'wN': knight_value, 'bB': bishop_value,
+                     'wB': bishop_value, 'bR': rook_value, 'wR': rook_value, 'bQ': queen_value, 'wQ': queen_value,
+                     'bK': king_value, 'wK': king_value}
 
     def __init__(self, ai, width=2, depth=2, min_pruning_depth=1):
         self.ai = ai
@@ -55,6 +59,8 @@ class SearchTree:
 
 
     def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
+        print(f"Game state at depth {current_depth}")
+        gs.print_board()
         if current_depth >= self.max_depth:
             return
 
@@ -62,28 +68,33 @@ class SearchTree:
 
         for move in top_moves:
             move_obj = Move.fromChessNotation(move, gs.board)
+            print("Making move: ", move)
             gs.makeMove(move_obj)
             move_evaluation = self.evaluate_board(gs)
+            print("Board right after evaluation: ")
+            gs.print_board()
             child_node = Node(move=move, evaluation=move_evaluation, depth=current_depth + 0.5, parent=current_node)
             current_node.add_child(child_node)
 
-            if current_depth >= self.min_pruning_depth:
-                if maximizing_player:
-                    alpha = max(alpha, move_evaluation)
-                    if alpha >= beta:
-                        gs.undoMove()
-                        break
-                else:
-                    beta = min(beta, move_evaluation)
-                    if beta <= alpha:
-                        gs.undoMove()
-                        break
+            # if current_depth >= self.min_pruning_depth:
+            #     if maximizing_player:
+            #         alpha = max(alpha, move_evaluation)
+            #         if alpha >= beta:
+            #             print("Unmaking move in alpha-beta pruning, max player")
+            #             gs.undoMove()
+            #             break
+            #     else:
+            #         beta = min(beta, move_evaluation)
+            #         if beta <= alpha:
+            #             print("Unmaking move in alpha-beta pruning, min player")
+            #             gs.undoMove()
+            #             break
 
             self._build_tree_recursive(gs, child_node, current_depth + 0.5, alpha, beta, not maximizing_player)
+            print("Unmaking move:", move)
             gs.undoMove()
 
     def evaluate_board(self, gs):
-        piece_values = {'bp': 1, 'wp': 1, 'bR': 5, 'wR': 5, 'bN': 3, 'wN': 3, 'bB': 3, 'wB':3, 'bQ':9, 'wQ':9, 'bK': 1000, 'wK': 1000}
         white_evaluation = 0
         black_evaluation = 0
         # print("Board: ", gs.board)
@@ -92,11 +103,11 @@ class SearchTree:
                 if square != '--':
                     if square[0] == 'w':
                         piece_type = square
-                        piece_value = piece_values[piece_type]
+                        piece_value = self.pieces_values[piece_type]
                         white_evaluation += piece_value
                     elif square[0] == 'b':
                         piece_type = square
-                        piece_value = piece_values[piece_type]
+                        piece_value = self.pieces_values[piece_type]
                         black_evaluation += piece_value
         evaluation = white_evaluation - black_evaluation
         return evaluation

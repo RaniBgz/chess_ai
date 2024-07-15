@@ -24,8 +24,8 @@ PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
 #PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
 
-TREE_WIDTH = 8
-TREE_DEPTH = 8
+TREE_WIDTH = 2
+TREE_DEPTH = 2
 MIN_PRUNING_DEPTH = 2
 
 # Load configuration
@@ -138,8 +138,10 @@ def main():
             # print("Last human move: ", last_human_move)
 
             '''These two lines to use tree search or not.'''
-            ai_move = ai_move_without_tree_search(ai, gs)
-            # ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
+            # ai_move = ai_move_without_tree_search(ai, gs)
+            ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
+            print("Game board after tree search: ")
+            gs.print_board()
 
             # validMoves = gs.getValidMoves()
             # cn_valid_moves = [move.getChessNotation() for move in validMoves]

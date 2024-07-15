@@ -11,11 +11,11 @@ from utils import chess_state_to_board
 #TODO: make training fault-resilient
 
 num_chunks = 1000
-batch_size = 8
+batch_size = 4
 chunks_to_save = 2
 
-model_folder = './cnn_models_v9'
-base_model_name = 'cnn_v9'
+model_folder = './cnn_models_v10'
+base_model_name = 'cnn_v10'
 model_extension = '.h5'
 pretrained_chunks = 0
 model_path = os.path.join(model_folder, f'{base_model_name}_{pretrained_chunks}_bs_{batch_size}{model_extension}')
@@ -68,10 +68,15 @@ class ChessAI:
         x = keras.layers.Flatten()(x)
         # x = keras.layers.GlobalAvgPool2D()(x)
 
-        dense1 = keras.layers.Dense(1024)(x)
-        dense1 = keras.layers.Dropout(0.3)(dense1)
+        # First dense layer with regularization
+        dense1 = keras.layers.Dense(1024, kernel_regularizer=keras.regularizers.l2(0.01))(x)
         dense1 = keras.layers.BatchNormalization()(dense1)
         dense1 = keras.layers.Activation('relu')(dense1)
+
+        # Second dense layer with regularization
+        dense2 = keras.layers.Dense(512, kernel_regularizer=keras.regularizers.l2(0.01))(dense1)
+        dense2 = keras.layers.BatchNormalization()(dense2)
+        dense2 = keras.layers.Activation('relu')(dense2)
 
         # Output layers for starting and ending squares
         start_square = keras.layers.Dense(64, activation='softmax')(dense1)
