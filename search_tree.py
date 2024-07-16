@@ -6,7 +6,6 @@ This tree is used to explore the moves at a certain width and depth.
 Needs functions: build tree (needs to get the top n moves from the ai mode (=width), and a depth parameter)
 '''
 
-from utils import chess_state_to_board
 from Chess.ChessState import Move
 import random
 

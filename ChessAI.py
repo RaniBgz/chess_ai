@@ -5,7 +5,7 @@ import chess
 import chess.pgn
 import time
 import os
-from utils import chess_state_to_board
+from utils.utils import chess_state_to_board
 
 
 #TODO: make training fault-resilient

@@ -78,7 +78,7 @@ def board_to_fen(gs):
 
 #Used to split a PGN file into chunks
 def split_pgn_file(pgn_file, games_per_chunk=500):
-    output_dir = 'split_pgn_files'
+    output_dir = '../split_pgn_files'
     os.makedirs(output_dir, exist_ok=True)
 
     chunk_count = 0

@@ -7,56 +7,41 @@ import yaml
 import os
 from Chess import ChessState
 from ChessAI import ChessAI
-from utils import chess_state_to_board
 from metrics import Metrics
 from search_tree import SearchTree
+from constants import cst
 
-WIDTH = HEIGHT = 512
-DIMENSION = 8  # 8*8 board
-SQ_SIZE = HEIGHT // DIMENSION
-MAX_FPS = 60
+
 IMAGES = {}
-BOARDER_SIZE = 40
-LABEL_FONT_SIZE = 20
-NUM_GAMES_TRAIN = 100
-PGN_PATH = './base_pgn_files/lichess_db_standard_rated_2015-08.pgn'
-# PGN_PATH = './test.pgn'
-#PGN_PATH = './lichess_db_standard_rated_2018-08.pgn.crdownload'
 CONFIG_PATH = './config.yaml'
 
-TREE_WIDTH = 3
-TREE_DEPTH = 3
+TREE_WIDTH = 2
+TREE_DEPTH = 2
 MIN_PRUNING_DEPTH = 2
+#TODO: Modify config to add tree width and depth, and true/false to use it or not
 
-# Load configuration
-def load_config():
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, 'r') as file:
-            return yaml.safe_load(file)
+
+def initialize_screen():
+    p.init()
+    screen = p.display.set_mode((cst.WIDTH, cst.HEIGHT))
+    screen.fill(p.Color("white"))
+    return screen
+
+def load_ai_model_from_config():
+    config = load_config()
+    if os.path.exists(config['model_path']):
+        ai = ChessAI(MODEL_PATH=config['model_path'])
     else:
-        return {'model_path': './chess_model.h5', 'use_checkpoint': False}
-
-# Save configuration
-def save_config(config):
-    with open(CONFIG_PATH, 'w') as file:
-        yaml.safe_dump(config, file)
-
-config = load_config()
-
-# Initialize global dictionary of images
-def loadImages():
-    pieces = ['wp', 'wR', 'wN', 'wB', 'wK', 'wQ', 'bp', 'bR', 'bN', 'bB', 'bK', 'bQ']
-    for piece in pieces:
-        IMAGES[piece] = p.transform.scale(p.image.load("images/" + piece + ".png"), (SQ_SIZE, SQ_SIZE))
+        ai = ChessAI()
+    return ai
 
 # MAIN, to handle user input and update graphics
 def main():
-    p.init()
-    screen = p.display.set_mode((WIDTH, HEIGHT))
+    screen = initialize_screen()
     clock = p.time.Clock()
-    screen.fill(p.Color("white"))
     gs = ChessState.GameState()
     validMoves = gs.getValidMoves()
+
     moveMade = False  # flag var for when a move is made
     animate = False  # flag variable for when we should use animate a move
     loadImages()
@@ -72,17 +57,12 @@ def main():
     replaced_moves = 0
     winner = "Tie"
 
-
     metrics_saved = False
 
-    evaluations = []
     model_name = config['model_path'].split('/')[-1]
     metrics = Metrics(model_name=model_name)
 
-    if os.path.exists(config['model_path']):
-        ai = ChessAI(MODEL_PATH=config['model_path'])
-    else:
-        ai = ChessAI()
+    ai = load_ai_model_from_config()
 
     search_tree = SearchTree(ai, width=TREE_WIDTH, depth=TREE_DEPTH)
 
@@ -95,8 +75,8 @@ def main():
             elif e.type == p.MOUSEBUTTONDOWN:
                 if not gameOver and humanTurn:
                     location = p.mouse.get_pos()  # (x, y) location of mouse
-                    col = location[0] // SQ_SIZE
-                    row = location[1] // SQ_SIZE
+                    col = location[0] // cst.SQ_SIZE
+                    row = location[1] // cst.SQ_SIZE
                     if sqSelected == (row, col):  # user click same square twice
                         sqSelected = ()  # deselect
                         playerClicks = []
@@ -138,10 +118,12 @@ def main():
             # print("Last human move: ", last_human_move)
 
             '''These two lines to use tree search or not.'''
-            # ai_move = ai_move_without_tree_search(ai, gs)
+            start_tree_time = time.time()
+            ai_move = ai_move_without_tree_search(ai, gs)
             ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
-            print("Game board after tree search: ")
-            gs.print_board()
+            end_tree_time = time.time()
+            # print("Game board after tree search: ")
+            # gs.print_board()
 
             # validMoves = gs.getValidMoves()
             # cn_valid_moves = [move.getChessNotation() for move in validMoves]
@@ -204,7 +186,7 @@ def main():
             # time.sleep(1)
             # running = False
 
-        clock.tick(MAX_FPS)
+        clock.tick(cst.MAX_FPS)
         p.display.flip()
 
 def ai_move_without_tree_search(ai, gs):
@@ -230,14 +212,14 @@ def highlightSquares(screen, gs, validMoves, sqSelected):
     if sqSelected != ():
         r, c = sqSelected
         if gs.board[r][c][0] == ('w' if gs.whiteToMove else 'b'):  # sqSelected is a piece that can be move
-            s = p.Surface((SQ_SIZE, SQ_SIZE))
+            s = p.Surface((cst.SQ_SIZE, cst.SQ_SIZE))
             s.set_alpha(100)  # transparent value
             s.fill(p.Color('blue'))
-            screen.blit(s, (c * SQ_SIZE, r * SQ_SIZE))
+            screen.blit(s, (c * cst.SQ_SIZE, r * cst.SQ_SIZE))
             s.fill(p.Color('yellow'))
             for move in validMoves:
                 if move.startRow == r and move.startCol == c:
-                    screen.blit(s, (move.endCol * SQ_SIZE, move.endRow * SQ_SIZE))
+                    screen.blit(s, (move.endCol * cst.SQ_SIZE, move.endRow * cst.SQ_SIZE))
 
 def drawGameState(screen, gs, validMoves, sqSelected):
     drawBoard(screen)  # draw square on the board
@@ -246,18 +228,18 @@ def drawGameState(screen, gs, validMoves, sqSelected):
 
 def drawBoard(screen):
     global colors
-    colors = [p.Color("white"), p.Color("gray")]
-    for r in range(DIMENSION):
-        for c in range(DIMENSION):
+    colors = [cst.light_wood, cst.dark_wood]
+    for r in range(cst.DIMENSION):
+        for c in range(cst.DIMENSION):
             color = colors[((r + c) % 2)]
-            p.draw.rect(screen, color, p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+            p.draw.rect(screen, color, p.Rect(c * cst.SQ_SIZE, r * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE))
 
 def drawPieces(screen, board):
-    for r in range(DIMENSION):
-        for c in range(DIMENSION):
+    for r in range(cst.DIMENSION):
+        for c in range(cst.DIMENSION):
             piece = board[r][c]
             if piece != "--":
-                screen.blit(IMAGES[piece], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+                screen.blit(IMAGES[piece], p.Rect(c * cst.SQ_SIZE, r * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE))
 
 def animateMove(move, screen, board, clock):
     global colors
@@ -271,24 +253,45 @@ def animateMove(move, screen, board, clock):
         drawPieces(screen, board)
         # erase the piece moved from its ending square
         color = colors[(move.endRow + move.endCol) % 2]
-        endSquare = p.Rect(move.endCol * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        endSquare = p.Rect(move.endCol * cst.SQ_SIZE, move.endRow * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE)
         p.draw.rect(screen, color, endSquare)
         # draw captured piece onto rectangle
         if move.pieceCaptured != '--':
             screen.blit(IMAGES[move.pieceCaptured], endSquare)
         # draw moving piece
-        screen.blit(IMAGES[move.pieceMoved], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+        screen.blit(IMAGES[move.pieceMoved], p.Rect(c * cst.SQ_SIZE, r * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE))
         p.display.flip()
         clock.tick(60)
 
 def drawText(screen, text):
     font = p.font.SysFont("Helvitca", 32, True, False)
     textObject = font.render(text, 0, p.Color('Gray'))
-    textLocation = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - textObject.get_width() / 2,
-                                                    HEIGHT / 2 - textObject.get_height() / 2)
+    textLocation = p.Rect(0, 0, cst.WIDTH, cst.HEIGHT).move(cst.WIDTH / 2 - textObject.get_width() / 2,
+                                                    cst.HEIGHT / 2 - textObject.get_height() / 2)
     screen.blit(textObject, textLocation)
     textObject = font.render(text, 0, p.Color("Black"))
     screen.blit(textObject, textLocation.move(2, 2))
 
+# Load configuration
+def load_config():
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'r') as file:
+            return yaml.safe_load(file)
+    else:
+        return {'model_path': './chess_model.h5', 'use_checkpoint': False}
+
+# Save configuration
+def save_config(config):
+    with open(CONFIG_PATH, 'w') as file:
+        yaml.safe_dump(config, file)
+
+# Initialize global dictionary of images
+def loadImages():
+    pieces = ['wp', 'wR', 'wN', 'wB', 'wK', 'wQ', 'bp', 'bR', 'bN', 'bB', 'bK', 'bQ']
+    for piece in pieces:
+        IMAGES[piece] = p.transform.scale(p.image.load("images/" + piece + ".png"), (cst.SQ_SIZE, cst.SQ_SIZE))
+
+
 if __name__ == "__main__":
+    config = load_config()
     main()
