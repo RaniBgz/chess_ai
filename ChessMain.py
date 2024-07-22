@@ -12,6 +12,7 @@ from search_tree import SearchTree
 from constants import cst
 
 
+
 IMAGES = {}
 CONFIG_PATH = './config.yaml'
 
@@ -27,6 +28,13 @@ def initialize_screen():
     screen.fill(p.Color("white"))
     return screen
 
+def initialize_game():
+    clock = p.time.Clock()
+    gs = ChessState.GameState()
+    validMoves = gs.getValidMoves()
+    loadImages()
+    return clock, gs, validMoves
+
 def load_ai_model_from_config():
     config = load_config()
     if os.path.exists(config['model_path']):
@@ -35,16 +43,13 @@ def load_ai_model_from_config():
         ai = ChessAI()
     return ai
 
+
 # MAIN, to handle user input and update graphics
 def main():
     screen = initialize_screen()
-    clock = p.time.Clock()
-    gs = ChessState.GameState()
-    validMoves = gs.getValidMoves()
-
+    clock, gs, validMoves = initialize_game()
     moveMade = False  # flag var for when a move is made
     animate = False  # flag variable for when we should use animate a move
-    loadImages()
     running = True
     sqSelected = ()
     playerClicks = []
@@ -74,92 +79,33 @@ def main():
             # mouse handle
             elif e.type == p.MOUSEBUTTONDOWN:
                 if not gameOver and humanTurn:
-                    location = p.mouse.get_pos()  # (x, y) location of mouse
-                    col = location[0] // cst.SQ_SIZE
-                    row = location[1] // cst.SQ_SIZE
-                    if sqSelected == (row, col):  # user click same square twice
-                        sqSelected = ()  # deselect
-                        playerClicks = []
-                    else:
-                        sqSelected = (row, col)
-                        playerClicks.append(sqSelected)  # for both first and second clicks
+                    row, col = convert_click_to_coordinates()
+                    sqSelected, playerClicks = handle_human_clicks(row, col, sqSelected, playerClicks)
                     if len(playerClicks) == 2:  # after second click
-                        move = ChessState.Move(playerClicks[0], playerClicks[1], gs.board)
-                        for i in range(len(validMoves)):
-                            if move == validMoves[i]:
-                                # cn_human_move = validMoves[i].getChessNotation()
-                                # ai.score_move(gs, cn_human_move, humanTurn=True, n_top_moves=n_top_moves)
-                                last_human_move = str(validMoves[i].getChessNotation())
-                                gs.makeMove(validMoves[i])
-                                moveMade = True
-                                animate = True
-                                sqSelected = ()  # reset user click
-                                playerClicks = []
-                                #Human move: Engine is too slow to score all moves
-                        if not moveMade:
-                            playerClicks = [sqSelected]
+                        gs, sqSelected, playerClicks, moveMade, animate, last_human_move = handle_human_move(gs, validMoves, sqSelected, playerClicks)  #fixme: last_human_move
             # key handler
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_z:  # undo when z is pressed
-                    gs.undoMove() if playerTwo else gs.undoLastTwoMoves()      
+                    # TODO: reset metrics and move history
+                    gs.undoMove() if playerTwo else gs.undoLastTwoMoves()
                     moveMade = True
                     animate = False
                 if e.key == p.K_r:  # reset game when 'r' is pressed
-                    gs = ChessState.GameState()
-                    validMoves = gs.getValidMoves()
-                    sqSelected = ()
-                    playerClicks = []
+                    #TODO: reset metrics and move history
+                    gs, validMoves = reset_game_state()
+                    sqSelected, playerClicks = reset_selected_squares()
                     moveMade = False
                     animate = False
                     gameOver = False
 
         # AI move finder
         if not gameOver and not humanTurn:
-            # print("Last human move: ", last_human_move)
-
-            '''These two lines to use tree search or not.'''
-            start_tree_time = time.time()
-            ai_move = ai_move_without_tree_search(ai, gs)
-            ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
-            end_tree_time = time.time()
-            # print("Game board after tree search: ")
-            # gs.print_board()
-
-            # validMoves = gs.getValidMoves()
-            # cn_valid_moves = [move.getChessNotation() for move in validMoves]
-            # print("AI's best move: ", ai_move)
-            # board = chess_state_to_board(gs)
-            # print("Board at AI turn: ", board)
-            # print("Valid moves at AI turn ", cn_valid_moves)
-            # print("Board at AI turn: ", gs.board)
-
+            ai_move = get_ai_move(ai, gs, use_tree=False, search_tree=None, last_human_move=None)
+            gs, moveMade, animate, total_ai_moves, replaced_moves, gameOver = make_ai_move(ai_move, gs, metrics, total_ai_moves, replaced_moves, n_top_moves=n_top_moves)
             print("Human move: ", gs.moveLog[-1].getChessNotation() if gs.moveLog else "None", "AI move: ", ai_move)
-            if ai_move:
-                print("AI making move: ", ai_move)
-                metrics.score_move(gs, ai_move, n_top_moves=n_top_moves)
-                move = ChessState.Move.fromChessNotation(ai_move, gs.board)
-                gs.makeMove(move)
-                moveMade = True
-                animate = True
-                total_ai_moves += 1
-            elif ai_move is None:
-                print("AI couldn't make a valid move. Choosing a random move.")
-                validMoves = gs.getValidMoves()
-                if validMoves:
-                    random_move = random.choice(validMoves)
-                    cn_random_move = random_move.getChessNotation()
-                    metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
-                    gs.makeMove(random_move)
-                    moveMade = True
-                    animate = True
-                    replaced_moves += 1
-                    total_ai_moves += 1
-                else:
-                    print("No valid moves available. Game over.")
-                    gameOver = True
         if moveMade:
             if animate:
-                animateMove(gs.moveLog[-1], screen, gs.board, clock)
+                make_move_on_gui(gs, screen, clock)
             validMoves = gs.getValidMoves()
             moveMade = False
             animate = False
@@ -180,11 +126,9 @@ def main():
         if gameOver:
             if not metrics_saved:
                 threading.Thread(target=plot_accuracy, args=(metrics,)).start()
-                winner = 'White' if gs.whiteToMove else 'Black'
+                winner = 'White' if gs.whiteToMove else 'Black' #TODO handle tie
                 threading.Thread(target=save_game_summary, args=(metrics, winner, total_ai_moves, replaced_moves)).start()
                 metrics_saved = True
-            # time.sleep(1)
-            # running = False
 
         clock.tick(cst.MAX_FPS)
         p.display.flip()
@@ -205,6 +149,113 @@ def plot_accuracy(metrics):
 def save_game_summary(metrics, winner, total_ai_moves, replaced_moves):
     print("Inside plot accuracy in main")
     metrics.save_game_summary(winner, total_ai_moves, replaced_moves)
+
+def make_move_on_gui(gs, screen, clock):
+    animateMove(gs.moveLog[-1], screen, gs.board, clock)
+    pass
+
+
+def get_ai_move(ai, gs, use_tree=False, search_tree=None, last_human_move=None):
+    if use_tree:
+        ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
+    else:
+        ai_move = ai_move_without_tree_search(ai, gs)
+    return ai_move
+
+def make_ai_move(ai_move, gs, metrics, total_ai_moves, replaced_moves, n_top_moves=10):
+    gameOver = False
+    if ai_move:
+        metrics.score_move(gs, ai_move, n_top_moves=n_top_moves)
+        move = ChessState.Move.fromChessNotation(ai_move, gs.board)
+        gs.makeMove(move)
+        moveMade = True
+        animate = True
+        total_ai_moves += 1
+    elif ai_move is None:
+        validMoves = gs.getValidMoves()
+        if validMoves:
+            random_move = random.choice(validMoves)
+            cn_random_move = random_move.getChessNotation()
+            metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
+            gs.makeMove(random_move)
+            moveMade = True
+            animate = True
+            replaced_moves += 1
+            total_ai_moves += 1
+        else:
+            print("No valid moves available. Game over.")
+            gameOver = True
+    return gs, moveMade, animate, total_ai_moves, replaced_moves, gameOver
+
+#TODO: A bit complicated at the moment, Maybe need some overall class, and metrics, tree, etc to be attributes
+#TODO: Thread to build metrics
+def handle_ai_move(ai, gs, metrics, use_tree=False, search_tree=None, last_human_move=None, n_top_moves=10):
+    if ai_move:
+        print("AI making move: ", ai_move)
+        metrics.score_move(gs, ai_move, n_top_moves=n_top_moves)
+        move = ChessState.Move.fromChessNotation(ai_move, gs.board)
+        gs.makeMove(move)
+        moveMade = True
+        animate = True
+        total_ai_moves += 1
+    elif ai_move is None:
+        print("AI couldn't make a valid move. Choosing a random move.")
+        validMoves = gs.getValidMoves()
+        if validMoves:
+            random_move = random.choice(validMoves)
+            cn_random_move = random_move.getChessNotation()
+            metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
+            gs.makeMove(random_move)
+            moveMade = True
+            animate = True
+            replaced_moves += 1
+            total_ai_moves += 1
+        else:
+            print("No valid moves available. Game over.")
+            gameOver = True
+
+
+
+def convert_click_to_coordinates():
+    location = p.mouse.get_pos()  # (x, y) location of mouse
+    col = location[0] // cst.SQ_SIZE
+    row = location[1] // cst.SQ_SIZE
+    return row, col
+
+def reset_selected_squares():
+    sqSelected = ()  # deselect
+    playerClicks = []
+    return sqSelected, playerClicks
+
+def reset_game_state():
+    gs = ChessState.GameState()
+    validMoves = gs.getValidMoves()
+    return gs, validMoves
+
+def handle_human_clicks(row, col, sqSelected, playerClicks):
+    if sqSelected == (row, col):  # user click same square twice
+        sqSelected, playerClicks = reset_selected_squares()
+    else:
+        sqSelected = (row, col)
+        playerClicks.append(sqSelected)  # for both first and second clicks
+    return sqSelected, playerClicks
+
+#TODO: see if I can get rid of animate and moveMade booleans
+def handle_human_move(gs, validMoves, sqSelected, playerClicks):
+    last_human_move = None
+    moveMade = False
+    animate = False
+    move = ChessState.Move(playerClicks[0], playerClicks[1], gs.board)
+    for i in range(len(validMoves)):
+        if move == validMoves[i]:
+            last_human_move = str(validMoves[i].getChessNotation())
+            gs.makeMove(validMoves[i])
+            moveMade = True
+            animate = True
+            sqSelected, playerClicks = reset_selected_squares()
+            return gs, sqSelected, playerClicks, moveMade, animate, last_human_move
+    playerClicks = [sqSelected]
+    return gs, sqSelected, playerClicks, moveMade, animate, last_human_move
 
 
 
