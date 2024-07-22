@@ -47,6 +47,12 @@ class SearchTree:
         self.min_pruning_depth = min_pruning_depth
         # Initialize root node
 
+    def get_width(self):
+        return self.width
+
+    def get_depth(self):
+        return self.max_depth
+
     def build_tree(self, gs, base_move=None):
         current_depth = 0
         base_evaluation = self.evaluate_board(gs)

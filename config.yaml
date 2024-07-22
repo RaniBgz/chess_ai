@@ -1,2 +1,3 @@
 model_path: ./cnn_models_v9/cnn_v9_31_bs_8.h5
-use_checkpoint: false
+tree_width: 2
+tree_depth: 2
