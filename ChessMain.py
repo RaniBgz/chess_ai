@@ -56,6 +56,7 @@ def main():
     gameOver = False
     playerOne = True  # If a human is playing white, else False
     playerTwo = False  # If a human is playing black, else False
+
     last_human_move = None
     n_top_moves = 10
     total_ai_moves = 0

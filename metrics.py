@@ -27,6 +27,9 @@ class Metrics:
         self.search_tree = False
         self.tree_depth = None  # Depth of the search tree
         self.tree_width = None  # Width of the search tree
+        self.top_n_moves_to_score = 10
+        self.replaced_moves = 0
+        self.winner = "Tie"
 
     def initialize_plot_dir(self):
         self.game_start_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
