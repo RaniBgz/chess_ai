@@ -180,6 +180,7 @@ def make_ai_move(ai_move, gs, metrics, total_ai_moves, replaced_moves, n_top_mov
             metrics.score_move(gs, cn_random_move, n_top_moves=n_top_moves)
             gs.makeMove(random_move)
             moveMade = True
+
             animate = True
             replaced_moves += 1
             total_ai_moves += 1
