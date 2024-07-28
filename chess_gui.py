@@ -20,6 +20,10 @@ class ChessGUI:
         self.move_made = False
         self.last_move = None
         self.human_turn = False
+        self.ai_1_turn = False
+        self.game_over = False
+        self.end_game_message = ""
+
 
         self.winner = "Tie"
         self.metrics_saved = False
@@ -55,6 +59,7 @@ class ChessGUI:
         elif self.game_mode == GameMode.AI_VS_AI:
             self.player_1 = "AI"
             self.player_2 = "AI"
+            self.ai_1_turn = True
             return "Chess - AI vs AI"
         else:
             print("Invalid game mode, using default: Human vs AI")
@@ -195,49 +200,93 @@ class ChessGUI:
     def handle_game_over(self):
         if self.chess_backend.game_state.checkMate:
             if self.chess_backend.game_state.whiteToMove:
-                self.draw_text("Black wins by checkmate")
+                self.end_game_message = "Black wins by checkmate"
+                # self.draw_text("Black wins by checkmate")
                 self.winner = "Black"
             else:
-                self.draw_text("White wins by checkmate")
+                self.end_game_message = "White wins by checkmate"
+                # self.draw_text("White wins by checkmate")
                 self.winner = "White"
-            self.running = False
+            self.game_over = True
+            # self.running = False
         elif self.chess_backend.game_state.staleMate:
-            self.draw_text("Stalemate")
+            self.end_game_message = "Stalemate"
+            # self.draw_text("Stalemate")
             self.winner = "Tie"
-            self.running = False
+            # self.running = False
+
+    def handle_end_game_state(self):
+        while True:
+            for event in p.event.get():
+                if event.type == p.QUIT:
+                    return
+                if event.type == p.KEYDOWN:
+                    if event.key == p.K_ESCAPE:
+                        return
+
+            self.draw_game_state()
+            self.draw_text(self.end_game_message)
+            self.clock.tick(cst.MAX_FPS)
+            p.display.flip()
+
 
     def save_metrics(self):
         if not self.metrics_saved:
             self.chess_backend.save_metrics(self.winner)
             #TODO: fix metrics
 
+    def run(self):
+        if self.game_mode == GameMode.HUMAN_VS_AI:
+            self.run_human_vs_ai()
+        elif self.game_mode == GameMode.AI_VS_AI:
+            self.run_ai_vs_ai()
 
     def run_human_vs_ai(self):
         while self.running:
-            if self.human_turn:
-                self.handle_human_turn()
-                if self.move_made:
-                    self.human_turn = False
+            if not self.game_over:
+                if self.human_turn:
+                    self.handle_human_turn()
+                    if self.move_made:
+                        self.human_turn = False
+                else:
+                    self.handle_ai_turn()
+                    if self.move_made:
+                        self.human_turn = True
+                self.handle_move_animation()
+                self.draw_game_state()
+                self.handle_game_over()
+
             else:
-                self.handle_ai_turn()
-                if self.move_made:
-                    self.human_turn = True
-            self.handle_move_animation()
-            self.draw_game_state()
-            self.handle_game_over()
+                self.handle_end_game_state()
+                break
             self.clock.tick(cst.MAX_FPS)
             p.display.flip()
-        if not self.metrics_saved:
-            self.save_metrics()
-            self.metrics_saved = True
+            if not self.metrics_saved:
+                self.save_metrics()
+                self.metrics_saved = True
 
 
     def run_ai_vs_ai(self):
         while self.running:
-            pass
-
+            if not self.game_over:
+                self.handle_ai_turn()
+                self.handle_move_animation()
+                self.draw_game_state()
+                self.handle_game_over()
+            else:
+                self.handle_end_game_state()
+                break
+            self.clock.tick(cst.MAX_FPS)
+            p.display.flip()
+        #TODO change metrics saving logic inside end game state, after optimization
+        # if not self.metrics_saved:
+        #     self.save_metrics()
+        #     self.metrics_saved = True
 
 
 if __name__ == "__main__":
-    gui = ChessGUI(game_mode=GameMode.HUMAN_VS_AI)
-    gui.run_human_vs_ai()
+    # gui = ChessGUI(game_mode=GameMode.HUMAN_VS_AI)
+    # gui.run_human_vs_ai()
+
+    gui = ChessGUI(game_mode=GameMode.AI_VS_AI)
+    gui.run()

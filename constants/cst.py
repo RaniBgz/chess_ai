@@ -2,7 +2,7 @@ import pygame as p
 
 
 #Screen constants
-WIDTH = HEIGHT = 512
+WIDTH = HEIGHT = 640
 DIMENSION = 8  # 8*8 board
 SQ_SIZE = HEIGHT // DIMENSION
 

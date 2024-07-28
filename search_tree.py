@@ -64,8 +64,6 @@ class SearchTree:
 
 
     def _build_tree_recursive(self, gs, current_node, current_depth, alpha, beta, maximizing_player):
-        # print(f"Game state at depth {current_depth}")
-        # gs.print_board()
         if current_depth >= self.max_depth:
             #Exploring further moves can lead to checkmate positions, need to revert the boolean after tree building
             if gs.checkMate:
@@ -75,6 +73,14 @@ class SearchTree:
             return
 
         top_moves = self.ai.get_top_n_moves(gs, self.width)
+
+        if top_moves is None or len(top_moves) == 0:
+            # No legal moves available, this is either checkmate or stalemate
+            if gs.checkMate:
+                current_node.evaluation = float('-inf') if maximizing_player else float('inf')
+            else:# stalemate
+                current_node.evaluation = self.evaluate_board(gs)
+            return
 
         for move in top_moves:
             move_obj = Move.fromChessNotation(move, gs.board)
@@ -123,10 +129,12 @@ class SearchTree:
         return evaluation
 
     def get_best_move(self):
-        if not self.root:
+        if not self.root or not self.root.children:
             return None
 
         leaf_nodes = self._collect_leaf_nodes(self.root)
+        if not leaf_nodes:
+            return None
         best_evaluation = float('inf')
         best_leaf = None
 

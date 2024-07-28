@@ -224,7 +224,8 @@ class ChessAI:
         legal_moves = list(board.legal_moves)
         if not legal_moves:
             print("No legal moves")
-            return None
+            #Used to be return None
+            return []
 
         input_matrix = self.board_to_input(board)
         input_matrix = np.expand_dims(input_matrix, axis=0)  # Add batch dimension
