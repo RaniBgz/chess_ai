@@ -21,6 +21,7 @@ class ChessGUI:
         self.last_move = None
         self.human_turn = False
 
+        self.winner = "Tie"
         self.metrics_saved = False
         self.running = True
 
@@ -73,21 +74,22 @@ class ChessGUI:
     def initialize_clock(self):
         return p.time.Clock()
 
-    def highlight_squares(self, gs, validMoves, sqSelected):
-        if sqSelected != ():
-            r, c = sqSelected
+    def highlight_squares(self):
+        gs = self.chess_backend.game_state
+        valid_moves = gs.getValidMoves()
+        if self.selected_squares != ():
+            r, c = self.selected_squares
             if gs.board[r][c][0] == ('w' if gs.whiteToMove else 'b'):  # sqSelected is a piece that can be move
                 s = p.Surface((cst.SQ_SIZE, cst.SQ_SIZE))
                 s.set_alpha(100)  # transparent value
                 s.fill(p.Color('blue'))
                 self.screen.blit(s, (c * cst.SQ_SIZE, r * cst.SQ_SIZE))
                 s.fill(p.Color('yellow'))
-                for move in validMoves:
+                for move in valid_moves:
                     if move.startRow == r and move.startCol == c:
                         self.screen.blit(s, (move.endCol * cst.SQ_SIZE, move.endRow * cst.SQ_SIZE))
 
     def draw_text(self, text):
-        print("In draw text")
         font = p.font.SysFont("Helvitca", 32, True, False)
         textObject = font.render(text, 0, p.Color('Gray'))
         textLocation = p.Rect(0, 0, cst.WIDTH, cst.HEIGHT).move(cst.WIDTH / 2 - textObject.get_width() / 2,
@@ -104,30 +106,17 @@ class ChessGUI:
                 color = colors[((r + c) % 2)]
                 p.draw.rect(self.screen, color, p.Rect(c * cst.SQ_SIZE, r * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE))
 
-    def draw_pieces(self, board):
+    def draw_pieces(self):
         for r in range(cst.DIMENSION):
             for c in range(cst.DIMENSION):
-                piece = board[r][c]
+                piece = self.chess_backend.game_state.board[r][c]
                 if piece != "--":
                     self.screen.blit(self.IMAGES[piece], p.Rect(c * cst.SQ_SIZE, r * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE))
 
-    def draw_game_state(self, gs, validMoves, sqSelected):
+    def draw_game_state(self):
         self.draw_board()  # draw square on the board
-        self.highlight_squares(gs, validMoves, sqSelected)
-        self.draw_pieces(gs.board)  # draw pieces on top of those squares
-
-    def highlightSquares(self, gs, validMoves, sqSelected):
-        if sqSelected != ():
-            r, c = sqSelected
-            if gs.board[r][c][0] == ('w' if gs.whiteToMove else 'b'):  # sqSelected is a piece that can be move
-                s = p.Surface((cst.SQ_SIZE, cst.SQ_SIZE))
-                s.set_alpha(100)  # transparent value
-                s.fill(p.Color('blue'))
-                self.screen.blit(s, (c * cst.SQ_SIZE, r * cst.SQ_SIZE))
-                s.fill(p.Color('yellow'))
-                for move in validMoves:
-                    if move.startRow == r and move.startCol == c:
-                        self.screen.blit(s, (move.endCol * cst.SQ_SIZE, move.endRow * cst.SQ_SIZE))
+        self.highlight_squares()
+        self.draw_pieces()  # draw pieces on top of those squares
 
     def animate_move(self, move, board, clock):
         global colors
@@ -138,7 +127,7 @@ class ChessGUI:
         for frame in range(frameCount + 1):
             r, c = (move.startRow + dR * frame / frameCount, move.startCol + dC * frame / frameCount)
             self.draw_board()
-            self.draw_pieces( board)
+            self.draw_pieces()
             # erase the piece moved from its ending square
             color = colors[(move.endRow + move.endCol) % 2]
             endSquare = p.Rect(move.endCol * cst.SQ_SIZE, move.endRow * cst.SQ_SIZE, cst.SQ_SIZE, cst.SQ_SIZE)
@@ -205,20 +194,22 @@ class ChessGUI:
 
     def handle_game_over(self):
         if self.chess_backend.game_state.checkMate:
-            print("Game over")
             if self.chess_backend.game_state.whiteToMove:
-                print("Black wins by checkmate")
                 self.draw_text("Black wins by checkmate")
+                self.winner = "Black"
             else:
-                print("White wins by checkmate")
                 self.draw_text("White wins by checkmate")
-            sleep(2)
+                self.winner = "White"
             self.running = False
         elif self.chess_backend.game_state.staleMate:
-            print("Game over: Stalemate")
             self.draw_text("Stalemate")
-            sleep(2)
+            self.winner = "Tie"
             self.running = False
+
+    def save_metrics(self):
+        if not self.metrics_saved:
+            self.chess_backend.save_metrics(self.winner)
+            #TODO: fix metrics
 
 
     def run_human_vs_ai(self):
@@ -231,11 +222,14 @@ class ChessGUI:
                 self.handle_ai_turn()
                 if self.move_made:
                     self.human_turn = True
-            self.draw_game_state(self.chess_backend.game_state, self.chess_backend.valid_moves, self.selected_squares)
             self.handle_move_animation()
+            self.draw_game_state()
             self.handle_game_over()
             self.clock.tick(cst.MAX_FPS)
             p.display.flip()
+        if not self.metrics_saved:
+            self.save_metrics()
+            self.metrics_saved = True
 
 
     def run_ai_vs_ai(self):

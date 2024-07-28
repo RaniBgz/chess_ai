@@ -107,8 +107,6 @@ def main():
                         move = ChessState.Move(playerClicks[0], playerClicks[1], gs.board)
                         for i in range(len(validMoves)):
                             if move == validMoves[i]:
-                                # cn_human_move = validMoves[i].getChessNotation()
-                                # ai.score_move(gs, cn_human_move, humanTurn=True, n_top_moves=n_top_moves)
                                 last_human_move = str(validMoves[i].getChessNotation())
                                 gs.makeMove(validMoves[i])
                                 moveMade = True
@@ -135,22 +133,9 @@ def main():
 
         # AI move finder
         if not gameOver and not humanTurn:
-            # print("Last human move: ", last_human_move)
-
             '''These two lines to use tree search or not.'''
             # ai_move = ai_move_without_tree_search(ai, gs)
             ai_move = ai_move_with_tree_search(search_tree, gs, last_human_move=last_human_move)
-            print("Game board after tree search: ")
-            gs.print_board()
-
-            # validMoves = gs.getValidMoves()
-            # cn_valid_moves = [move.getChessNotation() for move in validMoves]
-            # print("AI's best move: ", ai_move)
-            # board = chess_state_to_board(gs)
-            # print("Board at AI turn: ", board)
-            # print("Valid moves at AI turn ", cn_valid_moves)
-            # print("Board at AI turn: ", gs.board)
-
             print("Human move: ", gs.moveLog[-1].getChessNotation() if gs.moveLog else "None", "AI move: ", ai_move)
             if ai_move:
                 print("AI making move: ", ai_move)
@@ -201,9 +186,6 @@ def main():
                 winner = 'White' if gs.whiteToMove else 'Black'
                 threading.Thread(target=save_game_summary, args=(metrics, winner, total_ai_moves, replaced_moves)).start()
                 metrics_saved = True
-            # time.sleep(1)
-            # running = False
-
         clock.tick(MAX_FPS)
         p.display.flip()
 

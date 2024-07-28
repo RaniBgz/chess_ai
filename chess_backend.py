@@ -3,6 +3,7 @@ from ChessAI import ChessAI
 from metrics import Metrics
 from search_tree import SearchTree
 from Chess import ChessState
+import threading
 import random
 
 class ChessBackend:
@@ -60,6 +61,7 @@ class ChessBackend:
         if self.search_tree:
             self.search_tree.build_tree(self.game_state, last_move)
             ai_move = self.search_tree.get_best_move()
+            self.metrics.score_move(self.game_state, ai_move, humanTurn=False)
         else:
             ai_move = self.ai.get_best_move(self.game_state)
         return ai_move
@@ -80,6 +82,11 @@ class ChessBackend:
             else: #No valid moves in this position, game is over
                 return False
 
+    def save_metrics(self, winner, total_ai_moves=0, replaced_moves=0):
+        print("Winner: ", winner)
+        threading.Thread(target=self.metrics.save_plot).start()
+        threading.Thread(target=self.metrics.save_game_summary, args=(winner,)).start()
+        print("Metrics saved")
 
 
     def run(self):
